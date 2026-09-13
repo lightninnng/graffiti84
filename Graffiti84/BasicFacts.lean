@@ -570,7 +570,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     le_antisymm (le_trans hecc (le_of_eq hradius.symm))
       SimpleGraph.radius_le_eccent
   have heq : G.eccent c = radOn G (Finset.univ.erase v) + 1 :=
-    hcen.trans hradius.symm
+    hcen.trans hradius
   have hρne : radOn G (Finset.univ.erase v) ≠ ⊤ := by
     intro h
     rw [h] at heq
@@ -587,19 +587,35 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
             edist_le_add_edge (hconn.preconnected c w) hwadj.symm
         _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
         _ = G.eccent c := heq.symm
-      · intro hcon
+      · -- ecc c ≤ edist c v: otherwise all vertices are within ρ of c
+        by_contra hcon
+        push_neg at hcon
+        rw [heq] at hcon
         have hallv : ∀ x : α, G.edist c x
             ≤ radOn G (Finset.univ.erase v) := by
           intro x
           by_cases hxv : x = v
-          · rw [hxv]; exact hcon
+          · rw [hxv]
+            have hcoV : ((G.edist c v).toNat : ℕ∞) = G.edist c v :=
+              ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
+                (hconn.preconnected c v))
+            have hcoP : ((radOn G (Finset.univ.erase v)).toNat : ℕ∞)
+                = radOn G (Finset.univ.erase v) := ENat.coe_toNat hρne
+            have hnat : (G.edist c v).toNat
+                < (radOn G (Finset.univ.erase v)).toNat := by
+              refine ENat.coe_lt_coe.mp ?_
+              rw [hcoV, hcoP]
+              exact hcon
+            rw [hcoV]
+            exact le_trans (ENat.coe_le_coe.mpr (Nat.le_of_lt_succ hnat))
+              (le_of_eq hcoP)
           · exact (edist_le_eccOn
               (G := G) (S := Finset.univ.erase v) (c := c)
               (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)).trans
               (le_of_eq hcmin)
         have hsmall : G.eccent c ≤ radOn G (Finset.univ.erase v) := by
           rw [← eccOn_univ_eq_eccent]
-          exact eccOn_le (G := G) (S := Finset.univ) (c := c) (k := _) hallv
+          refine eccOn_le (G := G) (S := Finset.univ) (c := c) (k := _) hallv
         rw [heq] at hsmall
         exact absurd (ENat.add_one_le_iff hρne |>.mp hsmall) (lt_irrefl _)
     refine Nat.cast_injective ?_
