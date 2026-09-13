@@ -59,9 +59,12 @@ lemma eccNat_pos_of_connected_nontrivial
   obtain ⟨x, hx⟩ := G.exists_edist_eq_eccent_of_finite v
   have hxt : G.eccent v ≠ ⊤ := fun h =>
     G.edist_ne_top_iff_reachable.mpr (hG.preconnected v x) (by rw [hx, h])
-  have hpos : 0 < G.eccent v := SimpleGraph.eccent_pos_iff.mpr (by infer_instance)
+  have hne0 : G.eccent v ≠ 0 := G.eccent_ne_zero v
+  have hpos : 0 < G.eccent v := by
+    by_contra h0
+    exact hne0 (le_antisymm (not_lt.mp h0) zero_le)
   simp only [eccNat]
-  exact ENat.toNat_pos hpos hxt
+  exact ENat.toNat_pos hne0 hxt
 
 /--
 Elementary finite auxiliary-graph lemma used in Case B of the Leaf Lemma
@@ -97,9 +100,9 @@ theorem degree_one_neighbor_of_all_other
   have hx1 : D.degree x ≠ 1 := h x hax
   -- Step 1: some degree-one neighbour `y` of `x` must be `a` itself.
   obtain ⟨y, hxy, hy1⟩ := hother x hxa
-  have hya : y = a := by
+  have hya : a = y := by
     by_contra hyne
-    obtain ⟨y', hy'x, hy'1⟩ := hother y hyne
+    obtain ⟨y', hy'x, hy'1⟩ := hother y (Ne.symm hyne)
     have hyy' : y' = x := uniq_nb hy1 hxy.symm hy'x
     exact hx1 (hyy' ▸ hy'1)
   subst hya
@@ -135,8 +138,11 @@ theorem degree_one_neighbor_of_all_other
   have hz1 : D.degree z = 1 := by rw [← hqz]; exact hq1
   have hxmem : x ∈ D.neighborFinset z := by simpa using hzx.symm
   have hwmem : w ∈ D.neighborFinset z := by simpa using hzw
-  have h2 : 2 ≤ D.degree z := by
-    simpa using Finset.two_le_card.mpr ⟨x, hxmem, w, hwmem, hxw⟩
+  have h2 : 2 ≤ (D.neighborFinset z).card := by
+    by_contra hcon
+    have hcon1 : (D.neighborFinset z).card ≤ 1 := by omega
+    exact hxw ((Finset.card_le_one.mp hcon1) hxmem hwmem)
+  have h2' : 2 ≤ D.degree z := by simpa using h2
   omega
 
 /-!
