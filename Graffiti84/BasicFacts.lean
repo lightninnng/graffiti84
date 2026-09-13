@@ -107,8 +107,8 @@ lemma adj_eq_of_degree_eq_one {G : SimpleGraph α} {z a b : α}
   have hcard : (G.neighborFinset z).card = 1 := by simpa using hdeg
   rw [Finset.card_eq_one] at hcard
   obtain ⟨c, hc⟩ := hcard
-  have e1 : a ∈ G.neighborFinset z := SimpleGraph.mem_neighborFinset.mpr ha
-  have e2 : b ∈ G.neighborFinset z := SimpleGraph.mem_neighborFinset.mpr hb
+  have e1 : a ∈ G.neighborFinset z := by simpa using ha
+  have e2 : b ∈ G.neighborFinset z := by simpa using hb
   rw [hc] at e1 e2
   simp only [Finset.mem_singleton] at e1 e2
   exact e1.trans e2.symm
@@ -132,8 +132,7 @@ lemma exists_ne_pair_of_three {a b : α} (hn3 : 3 ≤ Fintype.card α) :
   have hcard := Finset.card_le_card hsub
   have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
   by_cases hab : a = b
-  · subst hab
-    have hc1 : ({a, b} : Finset α).card = 1 := by simp
+  · have hc1 : ({a, b} : Finset α).card = 1 := by rw [hab]; simp
     omega
   · have hc2 : ({a, b} : Finset α).card = 2 := by
       rw [Finset.card_insert_of_notMem (by simp [hab]), Finset.card_singleton]
@@ -161,7 +160,7 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
       have h5 : G.edist c w ≤ eccOn G (S.erase v) c := edist_le_eccOn hwse
       calc G.edist c x = G.edist c v := by rw [hxv]
       _ ≤ G.edist c w + 1 := edist_le_add_edge hR hwadj.symm
-      _ ≤ eccOn G (S.erase v) c + 1 := by exact add_le_add_right h5 1
+      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add (le_refl _) h5
     · have hx' : x ∈ S.erase v := Finset.mem_erase.mpr ⟨hxv, hx⟩
       calc G.edist c x ≤ eccOn G (S.erase v) c := edist_le_eccOn hx'
       _ ≤ eccOn G (S.erase v) c + 1 := le_self_add
@@ -199,7 +198,7 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
     (k := (G.edist p y).toNat) hcoe.symm
   have hup : G.edist z y ≤ 1 + G.edist p y := by
     have hlen : (SimpleGraph.Walk.cons hzp q).length = 1 + (G.edist p y).toNat := by
-      rw [SimpleGraph.Walk.length_cons, hq]
+      rw [SimpleGraph.Walk.length_cons, hq]; omega
     calc G.edist z y ≤ ((SimpleGraph.Walk.cons hzp q).length : ℕ∞) :=
         SimpleGraph.edist_le _
     _ = ((1 + (G.edist p y).toNat : ℕ) : ℕ∞) := by rw [hlen]
