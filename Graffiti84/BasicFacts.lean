@@ -959,8 +959,8 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         rw [hsupget! _ (by omega), hsupdef]
         exact w.getVert_mem_support i
       have hmemΦ : Φ[i]! ∈ Φ := by
-        rw [hΦdef]
-        exact List.mem_map_of_mem (f := φ) (l := sup) hmem
+        rw [hΦdef, map_getElem! φ (by omega)]
+        exact List.mem_map_of_mem hmem
       exact Finset.le_max' _ _ (List.mem_toFinset.mpr hmemΦ)
     obtain ⟨i0, hi0lt, hi0val⟩ : ∃ i, i < Φ.length ∧ Φ[i]! = μ := by
       have hmem : μ ∈ Φ := List.mem_toFinset.mp (Finset.max'_mem _ _)
@@ -986,15 +986,15 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
       rcases hjpos with h' | h'
       · have hs := hstepΦ i1 (by omega)
         rw [hi1val] at hs
-        rw [h']
+        rw [h'] at hjb ⊢
         omega
       · have hs := hstepΦ j (by omega)
         rw [h'] at hs
         rw [hi1val] at hs
         omega
-    obtain ⟨m, n, hmn, hmval, hnval, hposm, hposn⟩ :
+    obtain ⟨m, n, hmn, hmval, hnval, hposn, hnt⟩ :
         ∃ m n : ℕ, m < n ∧ Φ[m]! = μ - 1 ∧ Φ[n]! = μ - 1 ∧
-          1 ≤ m ∧ n ≤ Φ.length - 1 := by
+          n ≤ Φ.length - 1 ∧ (m, n) ≠ (0, Φ.length - 1) := by
       by_cases hcase : i1 = 0
       · have hLast : Φ[Φ.length - 1]! = μ := by
           rw [← hclosed, ← hcase]
@@ -1007,11 +1007,19 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
           rw [hLast] at hs
           have hub2 : Φ[Φ.length - 2]! ≤ μ := hub _ (by omega)
           omega
-        exact ⟨1, Φ.length - 2, by omega, hv1, hvm2, by omega, by omega⟩
+        refine ⟨1, Φ.length - 2, by omega, hv1, hvm2, by omega, ?_⟩
+        intro hpair
+        have : (1 : ℕ) = 0 := hpair.1
+        omega
       · have hi1pos : 0 < i1 := Nat.pos_of_ne_zero hcase
-        refine ⟨i1 - 1, i1 + 1, by omega, ?_, ?_, by omega, by omega⟩
+        refine ⟨i1 - 1, i1 + 1, by omega, ?_, ?_, by omega, ?_⟩
         · exact hneighb (i1 - 1) (by omega) (Or.inr (by omega))
         · exact hneighb (i1 + 1) (by omega) (Or.inl rfl)
+        · intro hpair
+          rcases hpair.1 with hm0 | hm0
+          · have hlen2 : w.length = 2 := by omega
+            exact absurd hlen2 hk2
+          · exact absurd hm0 (by omega)
     have hpointeq : w.getVert m = w.getVert n := by
       have hmS : w.getVert m ∈ S := hwsub _ (w.getVert_mem_support _)
       have hnS : w.getVert n ∈ S := hwsub _ (w.getVert_mem_support _)
@@ -1025,14 +1033,29 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     have hND2 := (List.nodup_iff_getElem?_ne_getElem?).mp hcy.support_nodup
     have hne := hND2 (m - 1) (n - 1) (by omega)
       (by rw [List.length_tail]; omega)
-    have hm? : w.support.tail[m - 1]? = some (sup[m]!) := by
-      rw [tail_getElem?, show m - 1 + 1 = m from by omega, hsupget! m (by omega)]
-      exact (w.getVert_eq_support_getElem? (by omega)).symm
     have hn? : w.support.tail[n - 1]? = some (sup[n]!) := by
       rw [tail_getElem?, show n - 1 + 1 = n from by omega, hsupget! n (by omega)]
       exact (w.getVert_eq_support_getElem? (by omega)).symm
-    rw [hm?, hn?, hsupget! m (by omega), hsupget! n (by omega), hpointeq] at hne
-    exact absurd rfl hne
+    by_cases hm0 : m = 0
+    · -- a occurs in the tail at positions n and w.length
+      have hna : w.getVert n = a := by
+        rw [← hpointeq]
+        simp only [hm0, SimpleGraph.Walk.getVert_zero]
+      have hk? : w.support.tail[w.length - 1]? = some a := by
+        rw [tail_getElem?, show w.length - 1 + 1 = w.length from by omega]
+        rw [show w.support[w.length]? = some a from by
+          rw [← SimpleGraph.Walk.getVert_eq_support_getElem? (Nat.le_refl _)]
+          rw [SimpleGraph.Walk.getVert_length]]
+      have hnek := hND2 (n - 1) (w.length - 1) (by omega)
+        (by rw [List.length_tail]; omega)
+      rw [hn?] at hnek
+      rw [hsupget! n (by omega), hna] at hnek
+      exact absurd rfl hnek
+    · have hm? : w.support.tail[m - 1]? = some (sup[m]!) := by
+        rw [tail_getElem?, show m - 1 + 1 = m from by omega, hsupget! m (by omega)]
+        exact (w.getVert_eq_support_getElem? (by omega)).symm
+      rw [hm?, hn?, hsupget! m (by omega), hsupget! n (by omega), hpointeq] at hne
+      exact absurd rfl hne
 
 /-- **F2.** Every pair of vertices carries an induced tree containing a
 geodesic between them; in particular `t(G) ≥ dist(u,v) + 1`. -/
