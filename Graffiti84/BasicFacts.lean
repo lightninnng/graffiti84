@@ -413,6 +413,12 @@ lemma deleteConnected_of_isUniqueEccentricPoint {G : SimpleGraph α}
   -- every geodesic from c to w ≠ v avoids v
   have havoid : ∀ {w : α}, w ≠ v → ∃ q : G.Walk c w, v ∈ q.support → False := by
     intro w hw
+    have hco1 : ((G.edist c v).toNat : ℕ∞) = G.edist c v :=
+      ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
+        (hconn.preconnected c v))
+    have hco2 : ((G.edist v w).toNat : ℕ∞) = G.edist v w :=
+      ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
+        (hconn.preconnected v w))
     have hcw : ((G.edist c w).toNat : ℕ∞) = G.edist c w :=
       ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
         (hconn.preconnected c w))
@@ -452,7 +458,7 @@ lemma deleteConnected_of_isUniqueEccentricPoint {G : SimpleGraph α}
   · exact hyq h
 
 lemma radOn_erase_add_one_le_of_isUniqueEccentricPoint {G : SimpleGraph α}
-    (hconn : G.Connected) {c v : α} (hc : IsCentral G c)
+    (hconn : G.Connected) {c v : α} (hnt : Nontrivial α) (hc : IsCentral G c)
     (huep : IsUniqueEccentricPoint G c v) :
     radOn G (Finset.univ.erase v) + 1 ≤ radOn G Finset.univ := by
   have hcv : G.edist c v = G.eccent c :=
@@ -523,7 +529,8 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
   have hwse : w ∈ Finset.univ.erase v := Finset.mem_erase.mpr
     ⟨hwne, Finset.mem_univ w⟩
   have hw' : G.edist c w ≤ radOn G (Finset.univ.erase v) :=
-    (edist_le_eccOn (G := G) (S := Finset.univ.erase v) (c := c) hwse).trans hcmin
+    (edist_le_eccOn (G := G) (S := Finset.univ.erase v) (c := c) hwse).trans
+      (le_of_eq hcmin)
   -- the eccentricity of c is at most ρ + 1
   have hecc : G.eccent c ≤ radOn G (Finset.univ.erase v) + 1 := by
     rw [← eccOn_univ_eq_eccent]
@@ -531,11 +538,11 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     intro x _
     by_cases hxv : x = v
     · calc G.edist c x = G.edist c v := by rw [hxv]
-      _ ≤ G.edist c w + 1 := edist_le_add_edge (hconn.preconnected c v) hw.symm
+      _ ≤ G.edist c w + 1 := edist_le_add_edge (hconn.preconnected c w) hw.symm
       _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
     · exact le_trans (edist_le_eccOn
         (G := G) (S := Finset.univ.erase v) (c := c)
-        (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)) hcmin
+        (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)) (le_of_eq hcmin)
   have heccne : G.eccent c ≠ ⊤ := by
     obtain ⟨t, ht⟩ := G.exists_edist_eq_eccent_of_finite c
     intro h
@@ -545,16 +552,14 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
   -- c is central, and radius = restricted radius + 1
   have hradius : G.radius = radOn G (Finset.univ.erase v) + 1 :=
     le_antisymm (le_trans SimpleGraph.radius_le_eccent hecc)
-      (hmono.trans (by rw [radOn_univ_eq_radius]))
-  have hcen : IsCentral G c := by
-    rw [← eccOn_univ_eq_eccent, hcmin, radOn_univ_eq_radius]
-    exact hradius.symm
+      (hmono.trans (le_of_eq radOn_univ_eq_radius))
+  have hcen : IsCentral G c := le_antisymm hecc SimpleGraph.radius_le_eccent
   have heq : G.eccent c = radOn G (Finset.univ.erase v) + 1 := by
-    rw [← eccOn_univ_eq_eccent, hcmin, radOn_univ_eq_radius]
-    exact hradius.symm
+    rw [hc, hradius]
   have hρne : radOn G (Finset.univ.erase v) ≠ ⊤ := by
     intro h
-    rw [heq, h, ENat.top_add] at heccne
+    rw [h] at heq
+    simp at heq
     exact heccne heq
   refine ⟨c, hcen, ?_, fun y hy => ?_⟩
   · -- dist c v = ecc.toNat
@@ -564,7 +569,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     have hed : G.edist c v = G.eccent c := by
       refine le_antisymm ?_ ?_
       · calc G.edist c v ≤ G.edist c w + 1 :=
-            edist_le_add_edge (hconn.preconnected c v) hw.symm
+            edist_le_add_edge (hconn.preconnected c w) hw.symm
         _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
         _ = G.eccent c := heq.symm
       · intro hcon
@@ -575,12 +580,13 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
           · rw [hxv]; exact hcon
           · exact (edist_le_eccOn
               (G := G) (S := Finset.univ.erase v) (c := c)
-              (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)).trans hcmin
+              (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)).trans
+              (le_of_eq hcmin)
         have hsmall : G.eccent c ≤ radOn G (Finset.univ.erase v) := by
           rw [← eccOn_univ_eq_eccent]
           exact eccOn_le (G := G) (S := Finset.univ) (c := c) (k := _) hallv
         rw [heq] at hsmall
-        exact absurd (ENat.add_one_le_iff (hm := hρne).mp hsmall) (lt_irrefl _)
+        exact absurd (ENat.add_one_le_iff hρne |>.mp hsmall) (lt_irrefl _)
     refine Nat.cast_injective ?_
     have hd' : ((G.dist c v : ℕ) : ℕ∞) = G.edist c v := by
       show (((G.edist c v).toNat : ℕ) : ℕ∞) = _
@@ -591,18 +597,21 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
   · -- dist c y < ecc.toNat for y ≠ v
     have hdy : G.edist c y ≤ radOn G (Finset.univ.erase v) :=
       (edist_le_eccOn (G := G) (S := Finset.univ.erase v) (c := c)
-        (Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩)).trans hcmin
+        (Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩)).trans (le_of_eq hcmin)
     have hcoe1 : ((G.dist c y : ℕ) : ℕ∞) = G.edist c y := by
       show (((G.edist c y).toNat : ℕ) : ℕ∞) = _
       exact ENat.coe_toNat
         (SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c y))
+    have hfin : G.edist c y ≠ ⊤ :=
+      SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c y)
+    have hstep : G.edist c y + 1 ≤ G.eccent c := by
+      rw [heq]
+      exact add_le_add hdy (le_refl 1)
+    have hlt : G.edist c y < G.eccent c :=
+      ENat.add_one_le_iff hfin |>.mpr hstep
     refine ENat.coe_lt_coe.mp ?_
     rw [hcoe1, hcoee]
-    refine ENat.add_one_le_iff (hm := ?_).mpr ?_
-    · show G.edist c y ≠ ⊤
-      exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c y)
-    · rw [heq]
-      exact add_le_add hdy (le_refl 1)
+    exact hlt
 
 /-! ### F5: deleting a leaf never raises the radius -/
 
@@ -614,14 +623,14 @@ lemma radOn_erase_le_radOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
     (hn3 : 3 ≤ Fintype.card α) :
     radOn G (Finset.univ.erase z) ≤ radOn G Finset.univ := by
   obtain ⟨c, hc, hcmin⟩ := eccOn_eq_radOn_attained
-    (G := G) (S := Finset.univ) Finset.univ_nonempty
+    (G := G) (S := Finset.univ) (hS := Finset.univ_nonempty)
   have hcen : G.eccent c = G.radius := by
     rw [← eccOn_univ_eq_eccent, hcmin, radOn_univ_eq_radius]
   have hcz : c ≠ z := by
     intro h
     rw [h] at hcen
     have hcor := radius_lt_eccOn_of_isLeaf hconn hdeg hzp hn3
-    rw [← eccOn_univ_eq_eccent, hcen] at hcor
+    rw [eccOn_univ_eq_eccent (c := z), hcen] at hcor
     have hfin : G.radius ≠ ⊤ := by
       obtain ⟨t, ht⟩ := G.exists_edist_eq_eccent_of_finite c
       intro h
@@ -664,7 +673,6 @@ def IsInducedTree (G : SimpleGraph α) (S : Finset α) : Prop :=
   (∀ a ∈ S, ∀ b ∈ S, ConnectsWithin G S a b) ∧ AcyclicWithin G S
 
 /-- The largest order of an induced tree. -/
-open Classical in
 noncomputable def treeNumber (G : SimpleGraph α) : ℕ :=
   (Finset.univ.filter (fun S : Finset α => IsInducedTree G S)).sup
     (fun S => S.card)
@@ -677,6 +685,7 @@ lemma treeNumber_mono_erase {G : SimpleGraph α} {v : α} :
       ≤ treeNumber G := by
   refine Finset.sup_le ?_
   intro S hS
-  exact Finset.le_sup (Finset.mem_filter.mpr ⟨hS.1, hS.2.1⟩)
+  obtain ⟨-, htree, -⟩ := Finset.mem_filter.mp hS
+  exact Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ S, htree⟩)
 
 end Graffiti84
