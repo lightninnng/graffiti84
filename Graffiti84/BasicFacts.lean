@@ -828,6 +828,7 @@ theorem geodesic_adj_support_succ {G : SimpleGraph α} (hconn : G.Connected)
 
 
 
+
 private lemma get!_of? {β : Type*} [Inhabited β] : ∀ {l : List β} {i : ℕ} {x : β},
     l[i]? = some x → l[i]! = x := by
   intro l
@@ -837,21 +838,22 @@ private lemma get!_of? {β : Type*} [Inhabited β] : ∀ {l : List β} {i : ℕ}
       intro i x h
       cases i with
       | zero =>
-          rw [show (h :: r)[0]? = some h from rfl] at h
-          rw [show (h :: r)[0]! = h from rfl]
-          exact Option.some.inj h
+          simp at h ⊢
+          exact h
       | succ i' => simpa using ih h
 
 private lemma map_getElem! {β γ : Type*} [Inhabited β] [Inhabited γ] (f : β → γ) :
     ∀ {l : List β} {i : ℕ}, i < l.length → (l.map f)[i]! = f l[i]! := by
   intro l
   induction l with
-  | nil => intro i hi; omega
+  | nil => intro i hi; simp at hi
   | cons h r ih =>
       intro i hi
       cases i with
       | zero => rfl
-      | succ i' => simpa using ih (by omega)
+      | succ i' =>
+          have hlen := List.length_cons h r
+          simpa using ih (by omega)
 
 private lemma tail_getElem? {β : Type*} : ∀ {l : List β} {t : ℕ},
     l.tail[t]? = l[t + 1]? := by
@@ -882,8 +884,10 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     exfalso
     set sup := w.support with hsupdef
     set Φ := sup.map φ with hΦdef
+    have hsplen : sup.length = w.length + 1 := by
+      rw [hsupdef, SimpleGraph.Walk.length_support]
     have hΦlen : Φ.length = w.length + 1 := by
-      rw [hΦdef, List.length_map, hsupdef, SimpleGraph.Walk.length_support]
+      rw [hΦdef, List.length_map, hsplen]
     have hsupget! : ∀ i (hi : i < w.length + 1), sup[i]! = w.getVert i := by
       intro i hi
       have h1 : some (w.getVert i) = sup[i]? := by
@@ -899,11 +903,14 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
       have hm0 : w.getVert i ∈ S := hwsub _ (w.getVert_mem_support _)
       rw [map_getElem! φ (by omega), map_getElem! φ (by omega),
         hsupget! _ (by omega), hsupget! _ (by omega)]
-      exact hstep _ hm0 _ hm1 hadj
+      rcases hstep _ hm0 _ hm1 hadj with h | h
+      · right; linarith [h]
+      · left; linarith [h]
     have hfirst : sup[0]! = a := by
       rw [hsupget! 0 (by omega)]
       exact SimpleGraph.Walk.getVert_zero w
-    have hlast : sup[w.length]! = a := by
+    have hlast : sup[Φ.length - 1]! = a := by
+      rw [show Φ.length - 1 = w.length from by omega]
       rw [hsupget! w.length (by omega)]
       exact SimpleGraph.Walk.getVert_length w
     have hclosed : Φ[0]! = Φ[Φ.length - 1]! := by
@@ -940,29 +947,29 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     set μ := Φ.toFinset.max' hVne with hμdef
     have hub : ∀ i (hi : i < Φ.length), Φ[i]! ≤ μ := by
       intro i hi
-      exact Finset.le_max' _ _
-        (List.mem_toFinset.mpr (List.mem_map_of_mem (l := sup) (f := φ)
-          (by rw [hsupdef]; exact w.getVert_mem_support _)))
+      have hmem : sup[i]! ∈ sup := by
+        rw [hsupget! _ (by omega), hsupdef]
+        exact w.getVert_mem_support i
+      have hmemΦ : Φ[i]! ∈ Φ := by
+        rw [hΦdef]
+        exact List.mem_map_of_mem hmem
+      exact Finset.le_max' _ _ (List.mem_toFinset.mpr hmemΦ)
     obtain ⟨i0, hi0lt, hi0val⟩ : ∃ i, i < Φ.length ∧ Φ[i]! = μ := by
       have hmem : μ ∈ Φ := List.mem_toFinset.mp (Finset.max'_mem _ _)
       rw [hΦdef, List.mem_map] at hmem
       obtain ⟨x, hxmem, hxval⟩ := hmem
-      have hidxlt : sup.idxOf x < sup.length := List.idxOf_lt_length_of_mem hxmem
-      have hsplen : sup.length = w.length + 1 := by
-        rw [hsupdef, SimpleGraph.Walk.length_support]
-      refine ⟨sup.idxOf x, by rw [hΦlen]; omega, ?_⟩
-      rw [map_getElem! φ (by omega), hsupget! _ (by omega), ← hxval]
-      have h1 : some (w.getVert (sup.idxOf x)) = sup[sup.idxOf x]? := by
-        rw [hsupdef]
-        exact w.getVert_eq_support_getElem? (by omega)
       have h2 : sup[sup.idxOf x]? = some x := List.getElem?_idxOf hxmem
-      rw [get!_of? (h1.symm.trans h2)]
+      refine ⟨sup.idxOf x, by omega, ?_⟩
+      rw [map_getElem! φ (by omega), get!_of? h2, ← hxval]
     obtain ⟨i1, hi1lt, hi1val⟩ :
         ∃ i, i < Φ.length - 1 ∧ Φ[i]! = μ := by
       by_cases hcase : i0 = Φ.length - 1
       · have hz : Φ[Φ.length - 1]! = μ := by rw [← hcase]; exact hi0val
         exact ⟨0, by omega, by rw [hclosed]; exact hz⟩
-      · exact ⟨i0, by omega, hi0val⟩
+      · have hle : i0 ≤ Φ.length - 1 := by omega
+        rcases Nat.eq_or_lt_of_le hle with h' | h'
+        · exact absurd h'.symm hcase
+        · exact ⟨i0, h', hi0val⟩
     have hneighb : ∀ j (hj : j < Φ.length), (j = i1 + 1 ∨ j + 1 = i1) →
         Φ[j]! = μ - 1 := by
       intro j hj hjpos
@@ -973,6 +980,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         rw [h']
         omega
       · have hs := hstepΦ j (by omega)
+        rw [← h'] at hs
         rw [hi1val] at hs
         omega
     obtain ⟨m, n, hmn, hmval, hnval, hposm, hposn⟩ :
@@ -986,13 +994,15 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
           (Or.inl (by omega))
         have hvm2 : Φ[Φ.length - 2]! = μ - 1 := by
           have hs := hstepΦ (Φ.length - 2) (by omega)
-          have hub2 : Φ[Φ.length - 2]! ≤ μ := hub _ (by omega)
+          rw [show Φ.length - 2 + 1 = Φ.length - 1 from by omega] at hs
           rw [hLast] at hs
+          have hub2 : Φ[Φ.length - 2]! ≤ μ := hub _ (by omega)
           omega
         exact ⟨1, Φ.length - 2, by omega, hv1, hvm2, by omega, by omega⟩
       · have hi1pos : 0 < i1 := Nat.pos_of_ne_zero hcase
-        exact ⟨i1 - 1, i1 + 1, by omega, hneighb (i1 - 1) (by omega) (Or.inr (by omega)),
-          hneighb (i1 + 1) (by omega) (Or.inl rfl), by omega, by omega⟩
+        refine ⟨i1 - 1, i1 + 1, by omega, ?_, ?_, by omega, by omega⟩
+        · exact hneighb (i1 - 1) (by omega) (Or.inr (by omega))
+        · exact hneighb (i1 + 1) (by omega) (Or.inl rfl)
     have hpointeq : w.getVert m = w.getVert n := by
       have hmS : w.getVert m ∈ S := hwsub _ (w.getVert_mem_support _)
       have hnS : w.getVert n ∈ S := hwsub _ (w.getVert_mem_support _)
@@ -1001,7 +1011,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         rw [← map_getElem! φ (by omega), ← map_getElem! φ (by omega)]
         rw [hmval, hnval]
       exact hinj _ hmS _ hnS hφ
-    have hsplen : w.support.length = w.length + 1 :=
+    have hsplen2 : w.support.length = w.length + 1 :=
       SimpleGraph.Walk.length_support w
     have hND2 := (List.nodup_iff_getElem?_ne_getElem?).mp hcy.support_nodup
     have hne := hND2 (m - 1) (n - 1) (by omega)
