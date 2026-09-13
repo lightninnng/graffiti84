@@ -27,6 +27,8 @@ F9  `isUniqueEccentricPoint_unique`  — a vertex has at most one UEP.
 
 namespace Graffiti84
 
+open Classical
+
 variable {α : Type*} [Fintype α] [DecidableEq α]
 
 /-! ## Definitions -/
@@ -63,9 +65,11 @@ lemma radOn_le_eccOn {G : SimpleGraph α} {S : Finset α} {c : α} (hc : c ∈ S
 /-- The restricted radius is attained by some centre. -/
 lemma eccOn_eq_radOn_attained {G : SimpleGraph α} {S : Finset α} (hS : S.Nonempty) :
     ∃ c ∈ S, eccOn G S c = radOn G S := by
-  haveI : Nonempty α := Nonempty.of_finset hS
-  obtain ⟨m, hm⟩ := Finite.exists_min (f := fun c : α => eccOn G S c)
-  exact ⟨m, hm, le_antisymm (le_iInf₂ fun c hc => hm c) (iInf₂_le m hm)⟩
+  obtain ⟨c0, hc0⟩ := hS
+  haveI : Nonempty {x // x ∈ S} := ⟨⟨c0, hc0⟩⟩
+  obtain ⟨m, hm⟩ := Finite.exists_min (f := fun c : {x // x ∈ S} => eccOn G S c)
+  exact ⟨m, m.property, le_antisymm (le_iInf₂ fun c hc => hm ⟨c, hc⟩)
+    (iInf₂_le m m.property)⟩
 
 /-- Bridging: `eccOn` over all vertices is Mathlib's eccentricity. -/
 lemma eccOn_univ_eq_eccent {G : SimpleGraph α} {c : α} :
@@ -86,7 +90,7 @@ lemma edist_le_add_edge {G : SimpleGraph α} {u v w : α}
   have hne : G.edist u v ≠ ⊤ := SimpleGraph.edist_ne_top_iff_reachable.mpr hR
   have hcoe : ((G.edist u v).toNat : ℕ∞) = G.edist u v := ENat.coe_toNat hne
   obtain ⟨p, hp⟩ := SimpleGraph.exists_walk_of_edist_eq_coe
-    (k := (G.edist u v).toNat) (by rw [← hcoe])
+    (k := (G.edist u v).toNat) hcoe.symm
   have h1 : (SimpleGraph.Adj.toWalk hvw).length = 1 := by
     simp [SimpleGraph.Adj.toWalk]
   have hlen : (p.append (SimpleGraph.Adj.toWalk hvw)).length
@@ -103,8 +107,8 @@ lemma adj_eq_of_degree_eq_one {G : SimpleGraph α} {z a b : α}
   have hcard : (G.neighborFinset z).card = 1 := by simpa using hdeg
   rw [Finset.card_eq_one] at hcard
   obtain ⟨c, hc⟩ := hcard
-  have e1 : a ∈ G.neighborFinset z := by simpa using ha
-  have e2 : b ∈ G.neighborFinset z := by simpa using hb
+  have e1 : a ∈ G.neighborFinset z := Finset.mem_neighborFinset.mpr ha
+  have e2 : b ∈ G.neighborFinset z := Finset.mem_neighborFinset.mpr hb
   rw [hc] at e1 e2
   simp only [Finset.mem_singleton] at e1 e2
   exact e1.trans e2.symm
@@ -126,7 +130,8 @@ lemma exists_ne_pair_of_three {a b : α} (hn3 : 3 ≤ Fintype.card α) :
     · simp [h]
     · simp [h]
   have hcard := Finset.card_le_card hsub
-  have hc2 : ({a, b} : Finset α).card = 2 := by simp
+  have hc2 : ({a, b} : Finset α).card = 2 := by
+    rw [Finset.card_insert_of_notMem (by simp), Finset.card_singleton]
   have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
   omega
 
@@ -148,9 +153,10 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
     by_cases hxv : x = v
     · obtain ⟨w, hws, hwne, hwadj⟩ := hw
       have hR : G.Reachable c w := hconn.preconnected c w
+      have hwse : w ∈ S.erase v := Finset.mem_erase.mpr ⟨hwne, hws⟩
       calc G.edist c x = G.edist c v := by rw [hxv]
       _ ≤ G.edist c w + 1 := edist_le_add_edge hR hwadj.symm
-      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add_right (edist_le_eccOn hws) 1
+      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add_right (edist_le_eccOn hwse) 1
     · have hx' : x ∈ S.erase v := Finset.mem_erase.mpr ⟨hxv, hx⟩
       calc G.edist c x ≤ eccOn G (S.erase v) c := edist_le_eccOn hx'
       _ ≤ eccOn G (S.erase v) c + 1 := le_self_add
@@ -158,7 +164,7 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
     have hS : S = {v} := by
       refine Finset.eq_singleton_iff_unique_mem.2 ⟨hv, fun x hx => ?_⟩
       by_contra hxv
-      exact hSe x (Finset.mem_erase.mpr ⟨hxv, hx⟩)
+      exact hSe ⟨x, Finset.mem_erase.mpr ⟨hxv, hx⟩⟩
     subst hS
     have hr0 : radOn G {v} = 0 := by
       have h0 : eccOn G {v} v = 0 := by
@@ -185,7 +191,7 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
     SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected p y)
   have hcoe : ((G.edist p y).toNat : ℕ∞) = G.edist p y := ENat.coe_toNat hne
   obtain ⟨q, hq⟩ := SimpleGraph.exists_walk_of_edist_eq_coe
-    (k := (G.edist p y).toNat) (by rw [← hcoe])
+    (k := (G.edist p y).toNat) hcoe.symm
   have hup : G.edist z y ≤ 1 + G.edist p y := by
     have hw : G.Walk z y := SimpleGraph.Walk.cons hzp q
     have hlen : hw.length = 1 + (G.edist p y).toNat := by
@@ -222,12 +228,13 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
     subst hyz
     have hecc1 : G.eccent p = 1 := by
       rw [heccy]
-      refine le_antisymm ?_ (Order.one_le_iff_pos.mpr
+      have htw : (SimpleGraph.Adj.toWalk hzp).length = 1 := by
+        simp [SimpleGraph.Adj.toWalk]
+      have h2 : G.edist p z ≤ ((SimpleGraph.Adj.toWalk hzp).length : ℕ∞) :=
+        SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp)
+      rw [htw] at h2
+      exact le_antisymm h2 (Order.one_le_iff_pos.mpr
         (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hzp).symm))
-      have h1 : G.edist p z ≤ 1 :=
-        le_trans (SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp))
-          (by simp [SimpleGraph.Adj.toWalk])
-      simpa using h1
     obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
     calc (1 : ℕ∞) + G.eccent p = 2 := by rw [hecc1]; norm_num
     _ = 1 + 1 := rfl
