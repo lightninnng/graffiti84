@@ -520,8 +520,8 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     have hsub : (Finset.univ : Finset α) = {v} :=
       Finset.eq_singleton_iff_unique_mem.2
         ⟨Finset.mem_univ v, fun x _ => hall2 x⟩
-    have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
-    rw [hsub] at h2
+    have hcard2 : Fintype.card \u03b1 = (Finset.univ : Finset \u03b1).card := rfl
+    rw [hcard2, hsub] at h2
     simp at h2
     omega
   obtain ⟨x, hx⟩ := exists_ne v
@@ -566,13 +566,11 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
   have hradius : G.radius = radOn G (Finset.univ.erase v) + 1 :=
     le_antisymm (le_trans SimpleGraph.radius_le_eccent hecc)
       (hmono.trans (le_of_eq radOn_univ_eq_radius))
-  have hcen : IsCentral G c := by
-    refine le_antisymm hecc ?_
-    rw [← hradius]
-    exact SimpleGraph.radius_le_eccent
-  have heq : G.eccent c = radOn G (Finset.univ.erase v) + 1 := by
-    have h1 : G.eccent c = G.radius := hcen
-    rw [h1, hradius]
+  have hcen : IsCentral G c :=
+    le_antisymm (le_trans hecc (le_of_eq hradius.symm))
+      SimpleGraph.radius_le_eccent
+  have heq : G.eccent c = radOn G (Finset.univ.erase v) + 1 :=
+    hcen.trans hradius.symm
   have hρne : radOn G (Finset.univ.erase v) ≠ ⊤ := by
     intro h
     rw [h] at heq
@@ -625,7 +623,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
       rw [heq]
       exact add_le_add hdy (le_refl 1)
     have hlt : G.edist c y < G.eccent c :=
-      ENat.add_one_le_iff (hm := hfin) (n := G.eccent c) |>.mpr hstep
+      ENat.add_one_le_iff (hm := hfin) (n := G.eccent c) |>.mp hstep
     refine ENat.coe_lt_coe.mp ?_
     rw [hcoe1, hcoee]
     exact hlt
