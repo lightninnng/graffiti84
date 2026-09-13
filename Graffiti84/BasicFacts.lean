@@ -599,23 +599,17 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
             have hcoV : ((G.edist c v).toNat : ℕ∞) = G.edist c v :=
               ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
                 (hconn.preconnected c v))
-            have hcoP : ((radOn G (Finset.univ.erase v)).toNat : ℕ∞)
-                = radOn G (Finset.univ.erase v) := ENat.coe_toNat hρne
-            have hnat : (G.edist c v).toNat
-                < (radOn G (Finset.univ.erase v)).toNat + 1 := by
-              refine ENat.coe_lt_add_one_iff.mp ?_
-              rw [hcoV]
-              exact hcon.le
-            rw [hcoV]
-            exact le_trans (ENat.coe_le_coe.mpr (Nat.le_of_lt_succ hnat))
-              (le_of_eq hcoP)
+            rw [hcoV] at hcon
+            rw [← hcoV]
+            exact ENat.lt_add_one_iff' (hm := ENat.coe_ne_top _) |>.mp hcon
           · exact (edist_le_eccOn
               (G := G) (S := Finset.univ.erase v) (c := c)
               (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)).trans
               (le_of_eq hcmin)
         have hsmall : G.eccent c ≤ radOn G (Finset.univ.erase v) := by
           rw [← eccOn_univ_eq_eccent]
-          refine eccOn_le (G := G) (S := Finset.univ) (c := c) (k := _) hallv
+          refine eccOn_le (G := G) (S := Finset.univ) (c := c) (k := _)
+            (fun x _ => hallv x)
         rw [heq] at hsmall
         exact absurd (ENat.add_one_le_iff hρne |>.mp hsmall) (lt_irrefl _)
     refine Nat.cast_injective ?_
