@@ -234,7 +234,7 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
     rw [hyz] at heccy
     have hecc1 : G.eccent p = 1 := by
       rw [heccy]
-      have htw : (SimpleGraph.Adj.toWalk hzp).length = 1 := by
+      have htw : (SimpleGraph.Adj.toWalk hzp.symm).length = 1 := by
         simp [SimpleGraph.Adj.toWalk]
       have h2 : G.edist p z ≤ ((SimpleGraph.Adj.toWalk hzp.symm).length : ℕ∞) :=
         SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp.symm)
@@ -242,10 +242,11 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
       exact le_antisymm h2 (Order.one_le_iff_pos.mpr
         (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hzp).symm))
     obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
+    have hpt : (1 : ℕ∞) ≤ G.edist p t :=
+      Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)
     calc (1 : ℕ∞) + G.eccent p = 2 := by rw [hecc1]; norm_num
     _ = 1 + 1 := rfl
-    _ ≤ 1 + G.edist p t := add_le_add_right
-        (Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)) 1
+    _ ≤ 1 + G.edist p t := add_le_add (le_refl 1) hpt
     _ = G.edist z t := (edist_leaf_eq hconn hdeg hzp htz).symm
     _ ≤ eccOn G Finset.univ z := edist_le_eccOn (Finset.mem_univ t)
   · calc (1 : ℕ∞) + G.eccent p = 1 + G.edist p y := by rw [heccy]
