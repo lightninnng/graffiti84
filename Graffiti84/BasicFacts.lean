@@ -520,7 +520,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     have hsub : (Finset.univ : Finset α) = {v} :=
       Finset.eq_singleton_iff_unique_mem.2
         ⟨Finset.mem_univ v, fun x _ => hall2 x⟩
-    have hcard2 : Fintype.card \u03b1 = (Finset.univ : Finset \u03b1).card := rfl
+    have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
     rw [hcard2, hsub] at h2
     simp at h2
     omega
