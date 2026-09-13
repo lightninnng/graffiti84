@@ -603,10 +603,10 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
                 = radOn G (Finset.univ.erase v) := ENat.coe_toNat hρne
             have hnat : (G.edist c v).toNat
                 < (radOn G (Finset.univ.erase v)).toNat + 1 := by
-              refine ENat.coe_lt_coe.mp ?_
-              rw [hcoV, hcoP]
-              exact hcon
-            rw [← hcoV]
+              refine ENat.coe_lt_add_one_iff.mp ?_
+              rw [hcoV]
+              exact hcon.le
+            rw [hcoV]
             exact le_trans (ENat.coe_le_coe.mpr (Nat.le_of_lt_succ hnat))
               (le_of_eq hcoP)
           · exact (edist_le_eccOn
