@@ -852,7 +852,7 @@ private lemma map_getElem! {β γ : Type*} [Inhabited β] [Inhabited γ] (f : β
       cases i with
       | zero => rfl
       | succ i' =>
-          have hlen := List.length_cons h r
+          have hlen : (h :: r).length = r.length + 1 := by simp
           simpa using ih (by omega)
 
 private lemma tail_getElem? {β : Type*} : ∀ {l : List β} {t : ℕ},
@@ -918,7 +918,8 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     have hk1 : w.length ≠ 1 := by
       intro hk1
       have hs := hstepΦ 0 (by omega)
-      rw [map_getElem! φ (by omega), map_getElem! φ (by omega), hfirst, hlast] at hs
+      rw [map_getElem! φ (by omega), map_getElem! φ (by omega), hfirst] at hs
+      rw [show 0 + 1 = Φ.length - 1 from by omega, hlast] at hs
       norm_num at hs
     have hk2 : w.length ≠ 2 := by
       intro hk2
@@ -939,7 +940,14 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
                   rw [hw, hr, hr', SimpleGraph.Walk.length_cons,
                     SimpleGraph.Walk.length_cons, SimpleGraph.Walk.length_cons] at hk2
                   simp at hk2
-    have hk3 : 3 ≤ w.length := by omega
+    have hk3 : 3 ≤ w.length := by
+      rcases Nat.lt_or_ge w.length 3 with h | h
+      · exfalso
+        interval_cases w.length with hl
+        · exact hw0 rfl
+        · exact hk1 rfl
+        · exact hk2 rfl
+      · exact h
     have hVne : Φ.toFinset.Nonempty := by
       refine ⟨φ a, ?_⟩
       rw [List.mem_toFinset, hΦdef, List.mem_map]
@@ -952,13 +960,14 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         exact w.getVert_mem_support i
       have hmemΦ : Φ[i]! ∈ Φ := by
         rw [hΦdef]
-        exact List.mem_map_of_mem hmem
+        exact List.mem_map_of_mem (f := φ) (l := sup) hmem
       exact Finset.le_max' _ _ (List.mem_toFinset.mpr hmemΦ)
     obtain ⟨i0, hi0lt, hi0val⟩ : ∃ i, i < Φ.length ∧ Φ[i]! = μ := by
       have hmem : μ ∈ Φ := List.mem_toFinset.mp (Finset.max'_mem _ _)
       rw [hΦdef, List.mem_map] at hmem
       obtain ⟨x, hxmem, hxval⟩ := hmem
       have h2 : sup[sup.idxOf x]? = some x := List.getElem?_idxOf hxmem
+      have hidxlt : sup.idxOf x < sup.length := List.idxOf_lt_length_of_mem hxmem
       refine ⟨sup.idxOf x, by omega, ?_⟩
       rw [map_getElem! φ (by omega), get!_of? h2, ← hxval]
     obtain ⟨i1, hi1lt, hi1val⟩ :
@@ -968,7 +977,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         exact ⟨0, by omega, by rw [hclosed]; exact hz⟩
       · have hle : i0 ≤ Φ.length - 1 := by omega
         rcases Nat.eq_or_lt_of_le hle with h' | h'
-        · exact absurd h'.symm hcase
+        · exact absurd h' hcase
         · exact ⟨i0, h', hi0val⟩
     have hneighb : ∀ j (hj : j < Φ.length), (j = i1 + 1 ∨ j + 1 = i1) →
         Φ[j]! = μ - 1 := by
@@ -980,7 +989,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         rw [h']
         omega
       · have hs := hstepΦ j (by omega)
-        rw [← h'] at hs
+        rw [h'] at hs
         rw [hi1val] at hs
         omega
     obtain ⟨m, n, hmn, hmval, hnval, hposm, hposn⟩ :
@@ -988,7 +997,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
           1 ≤ m ∧ n ≤ Φ.length - 1 := by
       by_cases hcase : i1 = 0
       · have hLast : Φ[Φ.length - 1]! = μ := by
-          rw [hclosed, hcase]
+          rw [← hclosed, ← hcase]
           exact hi1val
         have hv1 : Φ[1]! = μ - 1 := hneighb 1 (by omega)
           (Or.inl (by omega))
