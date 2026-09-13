@@ -305,11 +305,15 @@ lemma isUniqueEccentricPoint_unique {G : SimpleGraph α} {c x x' : α}
 lemma edist_le_add_edge_prepend {G : SimpleGraph α} {u v w : α}
     (huv : G.Adj u v) (hR : G.Reachable v w) :
     G.edist u w ≤ 1 + G.edist v w := by
-  rw [SimpleGraph.edist_comm]
   have h1 : G.edist w u ≤ G.edist w v + 1 :=
     edist_le_add_edge hR.symm huv.symm
-  rw [SimpleGraph.edist_comm (u := w) (v := v)] at h1
-  calc G.edist u w ≤ G.edist v w + 1 := h1
+  have h2 : G.edist w u = G.edist u w :=
+    SimpleGraph.edist_comm (u := w) (v := u)
+  have h3 : G.edist w v = G.edist v w :=
+    SimpleGraph.edist_comm (u := w) (v := v)
+  calc G.edist u w = G.edist w u := h2.symm
+  _ ≤ G.edist w v + 1 := h1
+  _ = G.edist v w + 1 := by rw [h3]
   _ = 1 + G.edist v w := (add_comm (G.edist v w) 1)
 
 /-- Any walk through `v` is at least as long as the two geodesic legs. -/
@@ -320,12 +324,11 @@ lemma edist_add_edist_le_of_mem_support {G : SimpleGraph α} {u v w : α}
   | @nil a =>
       have hvu : v = a := by simpa using hpv
       subst hvu
-      simp only [SimpleGraph.edist_self, zero_add]
-      exact SimpleGraph.edist_le (SimpleGraph.Walk.cons h q)
+      simp [SimpleGraph.edist_self]
   | @cons u x w h q ih =>
       have hmem : v ∈ (SimpleGraph.Walk.cons h q).support := hpv
       rw [SimpleGraph.Walk.support_cons] at hmem
-      rcases Finset.mem_cons.mp hmem with rfl | hpv'
+      rcases List.mem_cons.mp hmem with rfl | hpv'
       · simp only [SimpleGraph.edist_self, zero_add]
         exact SimpleGraph.edist_le (SimpleGraph.Walk.cons h q)
       · have hsum := ih hpv'
@@ -406,6 +409,7 @@ lemma deleteConnected_of_isUniqueEccentricPoint {G : SimpleGraph α}
     rw [← ht] at h
     exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c t) h
   have hcoee : ((G.eccent c).toNat : ℕ∞) = G.eccent c := ENat.coe_toNat hne
+  intro x y hx hy
   -- every geodesic from c to w ≠ v avoids v
   have havoid : ∀ {w : α}, w ≠ v → ∃ q : G.Walk c w, v ∈ q.support → False := by
     intro w hw
@@ -428,8 +432,7 @@ lemma deleteConnected_of_isUniqueEccentricPoint {G : SimpleGraph α}
     have hnat2 : ((G.edist c v).toNat + (G.edist v w).toNat : ℕ)
         ≤ (G.edist c w).toNat := by
       refine ENat.coe_le_coe.mp ?_
-      rw [hcv]
-      rw [hcoee, hvw]
+      rw [hco1, hco2]
       exact hsum
     have hnat3 : (G.edist c w).toNat < (G.eccent c).toNat := by
       refine ENat.coe_lt_coe.mp ?_
@@ -501,7 +504,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     (hmono : radOn G (Finset.univ.erase v) + 1 ≤ radOn G Finset.univ) :
     ∃ c, IsCentral G c ∧ IsUniqueEccentricPoint G c v := by
   haveI : Nontrivial α :=
-    Fintype.one_lt_card_iff_nontrivial.mpr (by omega)
+    Fintype.one_lt_card_iff_nontrivial (α := α).mpr (by omega)
   obtain ⟨x, hx⟩ := exists_ne v
   have hSe : (Finset.univ.erase v).Nonempty :=
     ⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩
@@ -536,8 +539,8 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
   have heccne : G.eccent c ≠ ⊤ := by
     obtain ⟨t, ht⟩ := G.exists_edist_eq_eccent_of_finite c
     intro h
-    exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c t)
-      (by rw [← ht, h])
+    rw [← ht] at h
+    exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c t) h
   have hcoee : ((G.eccent c).toNat : ℕ∞) = G.eccent c := ENat.coe_toNat heccne
   -- c is central, and radius = restricted radius + 1
   have hradius : G.radius = radOn G (Finset.univ.erase v) + 1 :=
