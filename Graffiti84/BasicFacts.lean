@@ -347,7 +347,8 @@ lemma edist_add_edist_le_of_mem_support {G : SimpleGraph α} {u v w : α}
         calc G.edist u v + G.edist v w ≤
             ((1 + G.edist x v) + G.edist v w : ℕ∞) := step1
         _ ≤ 1 + ((q.length : ℕ) : ℕ∞) := le_trans step2 (le_refl _)
-        _ ≤ ((q.length + 1 : ℕ) : ℕ∞) := by push_cast; exact le_refl _
+        _ \u2264 ((q.length + 1 : \u2115) : \u2115\u221e) := by
+            exact_mod_cast (show (1 : \u2115) + q.length \u2264 q.length + 1 from by omega)
         _ = ((SimpleGraph.Walk.cons h q).length : ℕ∞) := by
             rw [SimpleGraph.Walk.length_cons]
 
@@ -510,8 +511,19 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     (hconn : G.Connected) {v : α} (h2 : 2 ≤ Fintype.card α)
     (hmono : radOn G (Finset.univ.erase v) + 1 ≤ radOn G Finset.univ) :
     ∃ c, IsCentral G c ∧ IsUniqueEccentricPoint G c v := by
-  haveI : Nontrivial α :=
-    Fintype.one_lt_card_iff_nontrivial (α := α).mp (by omega)
+  haveI : Nontrivial \u03b1 := by
+    by_contra hnt
+    have hall2 : \u2200 w : \u03b1, w = v := by
+      intro w
+      by_contra hw
+      exact hnt \u27e8v, w, fun hh => hw hh.symm\u27e9
+    have hsub : (Finset.univ : Finset \u03b1) = {v} :=
+      Finset.eq_singleton_iff_unique_mem.2
+        \u27e8Finset.mem_univ v, fun x _ => hall2 x\u27e9
+    have hcard2 : Fintype.card \u03b1 = (Finset.univ : Finset \u03b1).card := rfl
+    rw [hsub] at h2
+    simp at h2
+    omega
   obtain ⟨x, hx⟩ := exists_ne v
   have hSe : (Finset.univ.erase v).Nonempty :=
     ⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩
@@ -627,7 +639,8 @@ lemma radOn_erase_le_radOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
     {z p : α} (hdeg : G.degree z = 1) (hzp : G.Adj z p)
     (hn3 : 3 ≤ Fintype.card α) :
     radOn G (Finset.univ.erase z) ≤ radOn G Finset.univ := by
-  obtain ⟨c, hc, hcmin⟩ := eccOn_eq_radOn_attained
+  haveI : Nonempty \u03b1 := \u27e8z\u27e9
+  obtain \u27e8c, hc, hcmin\u27e9 := eccOn_eq_radOn_attained
     (G := G) (S := Finset.univ) (hS := Finset.univ_nonempty)
   have hcen : G.eccent c = G.radius := by
     rw [← eccOn_univ_eq_eccent, hcmin, radOn_univ_eq_radius]
@@ -641,7 +654,7 @@ lemma radOn_erase_le_radOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
       have h1 : G.radius ≤ G.eccent c := SimpleGraph.radius_le_eccent
       obtain ⟨t, ht⟩ := G.exists_edist_eq_eccent_of_finite c
       intro h
-      rw [h, ht] at h1
+      rw [\u2190 ht, h] at h1
       exact absurd (eq_top_iff.mpr h1)
         (SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c t))
     have hcoer : ((G.radius).toNat : ℕ∞) = G.radius := ENat.coe_toNat hfin
