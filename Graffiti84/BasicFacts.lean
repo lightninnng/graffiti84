@@ -599,7 +599,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
             have hcoV : ((G.edist c v).toNat : ℕ∞) = G.edist c v :=
               ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
                 (hconn.preconnected c v))
-            rw [hcoV] at hcon
+            rw [← hcoV] at hcon
             rw [← hcoV]
             exact ENat.lt_add_one_iff' (hm := ENat.coe_ne_top _) |>.mp hcon
           · exact (edist_le_eccOn
