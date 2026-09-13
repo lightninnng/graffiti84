@@ -141,7 +141,7 @@ theorem degree_one_neighbor_of_all_other
   have h2 : 2 ≤ (D.neighborFinset z).card := by
     by_contra hcon
     have hcon1 : (D.neighborFinset z).card ≤ 1 := by omega
-    exact hxw ((Finset.card_le_one.mp hcon1) hxmem hwmem)
+    exact hxw ((Finset.card_le_one.mp hcon1) x hxmem w hwmem)
   have h2' : 2 ≤ D.degree z := by simpa using h2
   omega
 
