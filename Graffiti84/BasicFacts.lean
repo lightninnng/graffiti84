@@ -943,7 +943,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     have hk3 : 3 ≤ w.length := by
       rcases Nat.lt_or_ge w.length 3 with h | h
       · exfalso
-        interval_cases w.length with hl
+        interval_cases w.length
         · exact hw0 rfl
         · exact hk1 rfl
         · exact hk2 rfl
