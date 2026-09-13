@@ -38,11 +38,8 @@ noncomputable def radiusNat (G : SimpleGraph α) : ℕ :=
 noncomputable def eccNat (G : SimpleGraph α) (v : α) : ℕ :=
   G.eccent v |>.toNat
 
-/-- A vertex is central iff it realizes the graph radius. -/
-def IsCentral (G : SimpleGraph α) (v : α) : Prop :=
-  G.eccent v = G.radius
-
--- `IsUniqueEccentricPoint` now lives in `BasicFacts` (together with F9).
+-- `IsCentral` and `IsUniqueEccentricPoint` now live in `BasicFacts`
+-- (together with F9).
 
 /--
 Every vertex of a connected finite nontrivial graph has positive
