@@ -742,8 +742,7 @@ theorem isPath_of_length_eq_dist {G : SimpleGraph α} (hconn : G.Connected)
     cases hd : p.dropUntil z hm with
     | nil => rw [hd] at hrest; exact absurd hrest (by simp)
     | @cons z' x v'' h r =>
-        rw [hd] at hrest
-        rw [SimpleGraph.Walk.support_cons] at hrest
+        rw [hd, SimpleGraph.Walk.support_cons, List.tail_cons] at hrest
         refine ⟨r.dropUntil z hrest, SimpleGraph.Walk.start_mem_support _, ?_⟩
         have h1 : (SimpleGraph.Walk.cons h r).length = r.length + 1 :=
           SimpleGraph.Walk.length_cons h r
@@ -752,7 +751,7 @@ theorem isPath_of_length_eq_dist {G : SimpleGraph α} (hconn : G.Connected)
         have h3 : r.support.idxOf z < r.support.length :=
           List.idxOf_lt_length_of_mem hrest
         rw [SimpleGraph.Walk.length_support] at h3
-        rw [hd, h1]
+        rw [h1]
         omega
   have hq : (p.dropUntil z hm).length = p.length - p.support.idxOf z :=
     SimpleGraph.Walk.length_dropUntil p hm
@@ -778,6 +777,17 @@ theorem geodesic_adj_support_succ {G : SimpleGraph α} (hconn : G.Connected)
       have := List.idxOf_lt_length_of_mem hb
       rw [SimpleGraph.Walk.length_support] at this
       omega
+    have hna : a ≠ b := G.ne_of_adj hadj
+    have hidx : p.support.idxOf a ≠ p.support.idxOf b := by
+      intro heq
+      exact hna ((SimpleGraph.Walk.getVert_support_idxOf p ha).symm.trans
+        (heq ▸ SimpleGraph.Walk.getVert_support_idxOf p hb))
+    have hib : p.support.idxOf a + 2 ≤ p.support.idxOf b := by
+      by_contra hc
+      push_neg at hc
+      rcases Nat.eq_or_lt_of_le hc with h1' | h1'
+      · exact hne h1'.symm
+      · exact hidx (le_antisymm (by omega) hle)
     set w := ((p.takeUntil a ha).append (SimpleGraph.Adj.toWalk hadj)).append
       (p.dropUntil b hb) with hwdef
     have hwlen : w.length =
@@ -789,10 +799,22 @@ theorem geodesic_adj_support_succ {G : SimpleGraph α} (hconn : G.Connected)
     omega
   · right
     by_contra hne
+    have hle' : p.support.idxOf b ≤ p.support.idxOf a := (Nat.not_le.mp hle).le
     have hamem : p.support.idxOf a ≤ p.length := by
       have := List.idxOf_lt_length_of_mem ha
       rw [SimpleGraph.Walk.length_support] at this
       omega
+    have hnb : b ≠ a := (G.ne_of_adj hadj).symm
+    have hidx : p.support.idxOf b ≠ p.support.idxOf a := by
+      intro heq
+      exact hnb ((SimpleGraph.Walk.getVert_support_idxOf p hb).symm.trans
+        (heq ▸ SimpleGraph.Walk.getVert_support_idxOf p ha))
+    have hia : p.support.idxOf b + 2 ≤ p.support.idxOf a := by
+      by_contra hc
+      push_neg at hc
+      rcases Nat.eq_or_lt_of_le hc with h1' | h1'
+      · exact hne h1'.symm
+      · exact hidx (le_antisymm (by omega) hle')
     set w := ((p.takeUntil b hb).append (SimpleGraph.Adj.toWalk hadj.symm)).append
       (p.dropUntil a ha) with hwdef
     have hwlen : w.length =
