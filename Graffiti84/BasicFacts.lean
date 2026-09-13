@@ -175,7 +175,8 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
         simp only [eccOn, Finset.iSup_singleton]
         refine le_antisymm ?_ bot_le
         exact SimpleGraph.edist_le SimpleGraph.Walk.nil
-      have h1 := iInf₂_le v (Finset.mem_singleton.mpr rfl)
+      have h1 := radOn_le_eccOn (G := G) (S := ({v} : Finset α)) (c := v)
+        (Finset.mem_singleton.mpr rfl)
       rw [h0] at h1
       exact le_antisymm h1 bot_le
     have he : (({v} : Finset α).erase v) = ∅ := by simp
@@ -210,7 +211,7 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
     | @cons _ x _ h w' =>
       have hxp : x = p := adj_eq_of_degree_eq_one hdeg h hzp
       subst hxp
-      calc (1 : ℕ∞) + G.edist p y ≤ 1 + w'.length :=
+      calc (1 : ℕ∞) + G.edist x y ≤ 1 + w'.length :=
           add_le_add_left (SimpleGraph.edist_le w') _
       _ = ((SimpleGraph.Walk.cons h w').length : ℕ∞) := by
           rw [SimpleGraph.Walk.length_cons]; simp
