@@ -612,13 +612,9 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
             (fun x _ => hallv x)
         rw [heq] at hsmall
         exact absurd (ENat.add_one_le_iff hρne |>.mp hsmall) (lt_irrefl _)
-    refine Nat.cast_injective ?_
-    have hd' : ((G.dist c v : ℕ) : ℕ∞) = G.edist c v := by
-      show (((G.edist c v).toNat : ℕ) : ℕ∞) = _
-      exact ENat.coe_toNat
-        (SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c v))
-    rw [hd', hcoee]
-    exact hed
+    have hdist : G.dist c v = (G.edist c v).toNat := rfl
+    rw [hdist]
+    exact congrArg ENat.toNat hed
   · -- dist c y < ecc.toNat for y ≠ v
     have hdy : G.edist c y ≤ radOn G (Finset.univ.erase v) :=
       (edist_le_eccOn (G := G) (S := Finset.univ.erase v) (c := c)
