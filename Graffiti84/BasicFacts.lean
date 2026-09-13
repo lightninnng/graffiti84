@@ -214,7 +214,7 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
       calc (1 : ℕ∞) + G.edist x y ≤ 1 + w'.length :=
           add_le_add_right (SimpleGraph.edist_le w') 1
       _ = ((SimpleGraph.Walk.cons h w').length : ℕ∞) := by
-          rw [SimpleGraph.Walk.length_cons]; simp
+          rw [SimpleGraph.Walk.length_cons]; simp [Nat.add_comm]
   exact le_antisymm hup hdown
 
 /-- **F6.** If `z` is a leaf with neighbour `p` in a connected graph on at
@@ -228,10 +228,10 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
   obtain ⟨y, hymax⟩ := Finite.exists_max (f := fun x : α => G.edist p x)
   have heccy : G.eccent p = G.edist p y := by
     rw [SimpleGraph.eccent]
-    exact le_antisymm (iSup_le hymax) (le_iSup y)
+    exact le_antisymm (iSup_le hymax) (le_iSup (f := fun i => G.edist p i) y)
   by_cases hyz : y = z
   · -- the parent's farthest vertex is the leaf itself: ecc(p) = 1
-    subst hyz
+    rw [hyz] at heccy
     have hecc1 : G.eccent p = 1 := by
       rw [heccy]
       have htw : (SimpleGraph.Adj.toWalk hzp).length = 1 := by
