@@ -1,4 +1,5 @@
 import Mathlib
+import Graffiti84.BasicFacts
 
 /-!
 # RadiusCriticalStructure
@@ -41,13 +42,7 @@ noncomputable def eccNat (G : SimpleGraph α) (v : α) : ℕ :=
 def IsCentral (G : SimpleGraph α) (v : α) : Prop :=
   G.eccent v = G.radius
 
-/--
-`x` is the unique eccentric point of `c`: it is eccentric from `c`, and no
-other vertex is as far from `c`.
--/
-def IsUniqueEccentricPoint (G : SimpleGraph α) (c x : α) : Prop :=
-  G.dist c x = (G.eccent c).toNat ∧
-    ∀ y : α, y ≠ x → G.dist c y < (G.eccent c).toNat
+-- `IsUniqueEccentricPoint` now lives in `BasicFacts` (together with F9).
 
 /--
 Every vertex of a connected finite nontrivial graph has positive
