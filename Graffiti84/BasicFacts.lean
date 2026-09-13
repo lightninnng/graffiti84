@@ -645,4 +645,38 @@ lemma radOn_erase_le_radOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
   _ = radOn G Finset.univ := by
       rw [eccOn_univ_eq_eccent, hcen, ← radOn_univ_eq_radius]
 
+
+/-! ### The largest induced tree number t(G) -/
+
+/-- `S` induces a connected subgraph: any two of its vertices are joined by a
+walk staying inside `S`. -/
+def ConnectsWithin (G : SimpleGraph α) (S : Finset α) (a b : α) : Prop :=
+  ∃ w : G.Walk a b, ∀ z ∈ w.support, z ∈ S
+
+/-- `S` induces a forest: no nontrivial cycle stays inside `S`. -/
+def AcyclicWithin (G : SimpleGraph α) (S : Finset α) : Prop :=
+  ∀ a : α, ∀ w : G.Walk a a,
+    (∀ z ∈ w.support, z ∈ S) → w.length = 0 ∨ ¬ w.IsCycle
+
+/-- `S` induces a tree: connected within `S`, and no cycle within `S`
+(the empty and singleton sets count as trees here). -/
+def IsInducedTree (G : SimpleGraph α) (S : Finset α) : Prop :=
+  (∀ a ∈ S, ∀ b ∈ S, ConnectsWithin G S a b) ∧ AcyclicWithin G S
+
+/-- The largest order of an induced tree. -/
+open Classical in
+noncomputable def treeNumber (G : SimpleGraph α) : ℕ :=
+  (Finset.univ.filter (fun S : Finset α => IsInducedTree G S)).sup
+    (fun S => S.card)
+
+/-- **F14 (heredity).** Induced trees avoiding `v` are bounded by `t(G)`;
+this is the ambient form of `t(G - v) ≤ t(G)`. -/
+lemma treeNumber_mono_erase {G : SimpleGraph α} {v : α} :
+    (Finset.univ.filter (fun S : Finset α =>
+      IsInducedTree G S ∧ S ⊆ Finset.univ.erase v)).sup (fun S => S.card)
+      ≤ treeNumber G := by
+  refine Finset.sup_le ?_
+  intro S hS
+  exact Finset.le_sup (Finset.mem_filter.mpr ⟨hS.1, hS.2.1⟩)
+
 end Graffiti84
