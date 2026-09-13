@@ -1,0 +1,13 @@
+# Lean build artifacts
+.lake/
+*.olean
+*.ilean
+*.trace
+
+# Local reference material (downloaded papers)
+.refs/
+
+# Editor noise
+*.swp
+.vscode/
+.idea/

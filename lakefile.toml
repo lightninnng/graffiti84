@@ -1,0 +1,11 @@
+name = "Graffiti84"
+version = "0.1.0"
+defaultTargets = ["Graffiti84"]
+
+[[lean_lib]]
+name = "Graffiti84"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.32.2"
