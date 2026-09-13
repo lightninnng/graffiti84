@@ -69,7 +69,7 @@ lemma eccOn_eq_radOn_attained {G : SimpleGraph α} {S : Finset α} (hS : S.Nonem
   haveI : Nonempty {x // x ∈ S} := ⟨⟨c0, hc0⟩⟩
   obtain ⟨m, hm⟩ := Finite.exists_min (f := fun c : {x // x ∈ S} => eccOn G S c)
   exact ⟨m, m.property, le_antisymm (le_iInf₂ fun c hc => hm ⟨c, hc⟩)
-    (iInf₂_le m m.property)⟩
+    (iInf₂_le m.val m.property)⟩
 
 /-- Bridging: `eccOn` over all vertices is Mathlib's eccentricity. -/
 lemma eccOn_univ_eq_eccent {G : SimpleGraph α} {c : α} :
@@ -107,8 +107,8 @@ lemma adj_eq_of_degree_eq_one {G : SimpleGraph α} {z a b : α}
   have hcard : (G.neighborFinset z).card = 1 := by simpa using hdeg
   rw [Finset.card_eq_one] at hcard
   obtain ⟨c, hc⟩ := hcard
-  have e1 : a ∈ G.neighborFinset z := Finset.mem_neighborFinset.mpr ha
-  have e2 : b ∈ G.neighborFinset z := Finset.mem_neighborFinset.mpr hb
+  have e1 : a ∈ G.neighborFinset z := SimpleGraph.mem_neighborFinset.mpr ha
+  have e2 : b ∈ G.neighborFinset z := SimpleGraph.mem_neighborFinset.mpr hb
   rw [hc] at e1 e2
   simp only [Finset.mem_singleton] at e1 e2
   exact e1.trans e2.symm
@@ -130,10 +130,14 @@ lemma exists_ne_pair_of_three {a b : α} (hn3 : 3 ≤ Fintype.card α) :
     · simp [h]
     · simp [h]
   have hcard := Finset.card_le_card hsub
-  have hc2 : ({a, b} : Finset α).card = 2 := by
-    rw [Finset.card_insert_of_notMem (by simp), Finset.card_singleton]
   have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
-  omega
+  by_cases hab : a = b
+  · subst hab
+    have hc1 : ({a, b} : Finset α).card = 1 := by simp
+    omega
+  · have hc2 : ({a, b} : Finset α).card = 2 := by
+      rw [Finset.card_insert_of_notMem (by simp [hab]), Finset.card_singleton]
+    omega
 
 /-! ## F3: the radius drops by at most one -/
 
@@ -154,9 +158,10 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
     · obtain ⟨w, hws, hwne, hwadj⟩ := hw
       have hR : G.Reachable c w := hconn.preconnected c w
       have hwse : w ∈ S.erase v := Finset.mem_erase.mpr ⟨hwne, hws⟩
+      have h5 : G.edist c w ≤ eccOn G (S.erase v) c := edist_le_eccOn hwse
       calc G.edist c x = G.edist c v := by rw [hxv]
       _ ≤ G.edist c w + 1 := edist_le_add_edge hR hwadj.symm
-      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add_right (edist_le_eccOn hwse) 1
+      _ ≤ eccOn G (S.erase v) c + 1 := by exact add_le_add_right h5 1
     · have hx' : x ∈ S.erase v := Finset.mem_erase.mpr ⟨hxv, hx⟩
       calc G.edist c x ≤ eccOn G (S.erase v) c := edist_le_eccOn hx'
       _ ≤ eccOn G (S.erase v) c + 1 := le_self_add
@@ -193,18 +198,18 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
   obtain ⟨q, hq⟩ := SimpleGraph.exists_walk_of_edist_eq_coe
     (k := (G.edist p y).toNat) hcoe.symm
   have hup : G.edist z y ≤ 1 + G.edist p y := by
-    have hw : G.Walk z y := SimpleGraph.Walk.cons hzp q
-    have hlen : hw.length = 1 + (G.edist p y).toNat := by
+    have hlen : (SimpleGraph.Walk.cons hzp q).length = 1 + (G.edist p y).toNat := by
       rw [SimpleGraph.Walk.length_cons, hq]
-    calc G.edist z y ≤ ((hw.length : ℕ) : ℕ∞) := SimpleGraph.edist_le hw
+    calc G.edist z y ≤ ((SimpleGraph.Walk.cons hzp q).length : ℕ∞) :=
+        SimpleGraph.edist_le _
     _ = ((1 + (G.edist p y).toNat : ℕ) : ℕ∞) := by rw [hlen]
     _ = 1 + G.edist p y := by rw [← hcoe]; simp
   have hdown : 1 + G.edist p y ≤ G.edist z y := by
     refine le_iInf fun w => ?_
     cases w with
     | nil => exact absurd rfl hy
-    | @cons h x w' =>
-      have hxp : x = p := adj_eq_of_degree_eq_one hdeg h hzp
+    | cons h w' =>
+      have hxp := adj_eq_of_degree_eq_one hdeg h hzp
       subst hxp
       calc (1 : ℕ∞) + G.edist p y ≤ 1 + w'.length :=
           add_le_add_left (SimpleGraph.edist_le w') _
@@ -266,8 +271,8 @@ lemma isCut_of_isLeaf {G : SimpleGraph α} {z p : α}
   obtain ⟨w, hw⟩ := hdel z t hzn htp
   cases w with
   | nil => exact htz rfl
-  | @cons h x w' =>
-    have hxp : x = p := adj_eq_of_degree_eq_one hdeg h hzp
+  | cons h w' =>
+    have hxp := adj_eq_of_degree_eq_one hdeg h hzp
     subst hxp
     refine hw ?_
     cases w' with
