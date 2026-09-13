@@ -523,7 +523,6 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
     rw [hcard2, hsub] at h2
     simp at h2
-    omega
   obtain ⟨x, hx⟩ := exists_ne v
   have hSe : (Finset.univ.erase v).Nonempty :=
     ⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩
@@ -553,9 +552,10 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     · calc G.edist c x = G.edist c v := by rw [hxv]
       _ ≤ G.edist c w + 1 := edist_le_add_edge (hconn.preconnected c w) hwadj.symm
       _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
-    · exact le_trans (edist_le_eccOn
+    · exact le_trans (le_trans (edist_le_eccOn
         (G := G) (S := Finset.univ.erase v) (c := c)
-        (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)) (le_of_eq hcmin)
+        (Finset.mem_erase.mpr ⟨hxv, Finset.mem_univ x⟩)) (le_of_eq hcmin))
+        (le_self_add)
   have heccne : G.eccent c ≠ ⊤ := by
     obtain ⟨t, ht⟩ := G.exists_edist_eq_eccent_of_finite c
     intro h
