@@ -26,29 +26,15 @@ open Classical
 open SimpleGraph
 
 /--
-Arithmetic core of the vrd-corona Case A:
-for core radius `s >= 2` and pendant length `l >= 1`,
-the induced tree constructed above a Chung path has at least `2(s+l)` vertices.
--/
-theorem corona_tree_count
-    {s l : ℕ} (hs : 2 ≤ s) (hl : 1 ≤ l) :
-    2 * (s + l) ≤ (2 * s - 1) * (l + 1) := by
-  omega
-
-/--
 F13 (geodesic count): for `s, l >= 1`, a geodesic of the core block with all
 full-length pendant paths already yields `(s+1)(l+1) >= 2(s+l)` vertices.
-This replaces the ESS-based count `corona_tree_count` in the simplified proof.
+This is the count used by the simplified proof (Corollary 3.B in
+`docs/full-proof.md`); the ESS-based count of the original draft is gone.
 -/
 theorem tip_tree_count
     {s l : ℕ} (hs : 1 ≤ s) (hl : 1 ≤ l) :
     2 * (s + l) ≤ (s + 1) * (l + 1) := by
   nlinarith [hs, hl]
-
-/-- Radius-one core case: `S_l(K₂)` has exactly `2(l+1)=2r` vertices. -/
-theorem radius_one_core_count (l : ℕ) :
-    2 * (1 + l) = 2 * l + 2 := by
-  omega
 
 /--
 If one already has an induced path/tree witness on `2r-1` old vertices and
