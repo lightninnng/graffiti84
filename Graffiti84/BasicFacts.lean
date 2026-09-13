@@ -51,7 +51,8 @@ def IsCut (G : SimpleGraph α) (v : α) : Prop :=
 /-! ## eccOn / radOn basics -/
 
 lemma edist_le_eccOn {G : SimpleGraph α} {S : Finset α} {c x : α} (hx : x ∈ S) :
-    G.edist c x ≤ eccOn G S c := le_iSup₂ x hx
+    G.edist c x ≤ eccOn G S c :=
+  le_iSup₂ (f := fun i (_ : i ∈ S) => G.edist c i) x hx
 
 lemma eccOn_le {G : SimpleGraph α} {S : Finset α} {c : α} {k : ℕ∞}
     (h : ∀ x ∈ S, G.edist c x ≤ k) : eccOn G S c ≤ k := iSup₂_le h
@@ -62,8 +63,8 @@ lemma radOn_le_eccOn {G : SimpleGraph α} {S : Finset α} {c : α} (hc : c ∈ S
 /-- The restricted radius is attained by some centre. -/
 lemma eccOn_eq_radOn_attained {G : SimpleGraph α} {S : Finset α} (hS : S.Nonempty) :
     ∃ c ∈ S, eccOn G S c = radOn G S := by
+  haveI : Nonempty α := Nonempty.of_finset hS
   obtain ⟨m, hm⟩ := Finite.exists_min (f := fun c : α => eccOn G S c)
-    (Nonempty.of_finset hS)
   exact ⟨m, hm, le_antisymm (le_iInf₂ fun c hc => hm c) (iInf₂_le m hm)⟩
 
 /-- Bridging: `eccOn` over all vertices is Mathlib's eccentricity. -/
@@ -86,13 +87,15 @@ lemma edist_le_add_edge {G : SimpleGraph α} {u v w : α}
   have hcoe : ((G.edist u v).toNat : ℕ∞) = G.edist u v := ENat.coe_toNat hne
   obtain ⟨p, hp⟩ := SimpleGraph.exists_walk_of_edist_eq_coe
     (k := (G.edist u v).toNat) (by rw [← hcoe])
+  have h1 : (SimpleGraph.Adj.toWalk hvw).length = 1 := by
+    simp [SimpleGraph.Adj.toWalk]
   have hlen : (p.append (SimpleGraph.Adj.toWalk hvw)).length
       = (G.edist u v).toNat + 1 := by
-    rw [SimpleGraph.Walk.length_append, hp]
-    simp [SimpleGraph.Adj.toWalk]
-  calc G.edist u w ≤ (p.append (SimpleGraph.Adj.toWalk hvw)).length :=
+    rw [SimpleGraph.Walk.length_append, hp, h1]
+  calc G.edist u w ≤ ((p.append (SimpleGraph.Adj.toWalk hvw)).length : ℕ∞) :=
       SimpleGraph.edist_le _
-  _ = G.edist u v + 1 := by rw [hlen, hcoe]; norm_cast
+  _ = ((G.edist u v).toNat + 1 : ℕ∞) := by rw [hlen]; norm_cast
+  _ = G.edist u v + 1 := by rw [← hcoe]; simp
 
 /-- A vertex of degree one has at most one neighbour. -/
 lemma adj_eq_of_degree_eq_one {G : SimpleGraph α} {z a b : α}
@@ -100,8 +103,9 @@ lemma adj_eq_of_degree_eq_one {G : SimpleGraph α} {z a b : α}
   have hcard : (G.neighborFinset z).card = 1 := by simpa using hdeg
   rw [Finset.card_eq_one] at hcard
   obtain ⟨c, hc⟩ := hcard
-  have e1 : a ∈ ({c} : Finset α) := by rw [← hc]; simpa using ha
-  have e2 : b ∈ ({c} : Finset α) := by rw [← hc]; simpa using hb
+  have e1 : a ∈ G.neighborFinset z := by simpa using ha
+  have e2 : b ∈ G.neighborFinset z := by simpa using hb
+  rw [hc] at e1 e2
   simp only [Finset.mem_singleton] at e1 e2
   exact e1.trans e2.symm
 
@@ -119,11 +123,11 @@ lemma exists_ne_pair_of_three {a b : α} (hn3 : 3 ≤ Fintype.card α) :
   have hsub : (Finset.univ : Finset α) ⊆ {a, b} := by
     intro x _
     rcases hall' x with h | h
-    · exact Or.inl (by simpa using h)
-    · exact Or.inr (by simpa using h)
+    · simp [h]
+    · simp [h]
   have hcard := Finset.card_le_card hsub
+  have hc2 : ({a, b} : Finset α).card = 2 := by simp
   have hcard2 : Fintype.card α = (Finset.univ : Finset α).card := rfl
-  simp at hcard
   omega
 
 /-! ## F3: the radius drops by at most one -/
@@ -138,7 +142,7 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
   · obtain ⟨c, hc, hcmin⟩ := eccOn_eq_radOn_attained hSe
     have hmem : c ∈ S := (S.mem_erase.mp hc).2
     refine le_trans (iInf₂_le c hmem) ?_
-    rw [hcmin]
+    rw [← hcmin]
     refine eccOn_le ?_
     intro x hx
     by_cases hxv : x = v
@@ -152,33 +156,33 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
       _ ≤ eccOn G (S.erase v) c + 1 := le_self_add
   · -- S = {v}, whose restricted radius is 0
     have hS : S = {v} := by
-      apply Finset.eq_singleton_of_unique_mem hv
-      intro x hx
-      have h0 := hSe x hx
-      simpa using h0
+      refine Finset.eq_singleton_iff_unique_mem.2 ⟨hv, fun x hx => ?_⟩
+      by_contra hxv
+      exact hSe x (Finset.mem_erase.mpr ⟨hxv, hx⟩)
     subst hS
     have hr0 : radOn G {v} = 0 := by
       have h0 : eccOn G {v} v = 0 := by
         simp only [eccOn, Finset.iSup_singleton]
         refine le_antisymm ?_ bot_le
         exact SimpleGraph.edist_le SimpleGraph.Walk.nil
-      have h1 := iInf₂_le v (by simp)
+      have h1 := iInf₂_le v (Finset.mem_singleton.mpr rfl)
       rw [h0] at h1
       exact le_antisymm h1 bot_le
-    have he : ({v} : Finset α).erase v = ∅ := by simp
-    have : radOn G (({v} : Finset α).erase v) = ⊤ := by
+    have he : (({v} : Finset α).erase v) = ∅ := by simp
+    have htop : radOn G (({v} : Finset α).erase v) = ⊤ := by
       rw [he]; simp [radOn]
-    omega
+    rw [htop, hr0]
+    simp
 
 /-! ## F6: a leaf is not central -/
 
 /-- If `z` is a leaf with neighbour `p` in a connected graph, then
 `d(z, y) = 1 + d(p, y)` for every `y ≠ z`. -/
-lemma edist_leaf_eq {G : SimpleGraph α} [G.Connected] {z p y : α}
+lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
     (hdeg : G.degree z = 1) (hzp : G.Adj z p) (hy : y ≠ z) :
     G.edist z y = 1 + G.edist p y := by
   have hne : G.edist p y ≠ ⊤ :=
-    SimpleGraph.edist_ne_top_iff_reachable.mpr (G.Connected.preconnected p y)
+    SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected p y)
   have hcoe : ((G.edist p y).toNat : ℕ∞) = G.edist p y := ENat.coe_toNat hne
   obtain ⟨q, hq⟩ := SimpleGraph.exists_walk_of_edist_eq_coe
     (k := (G.edist p y).toNat) (by rw [← hcoe])
@@ -186,8 +190,9 @@ lemma edist_leaf_eq {G : SimpleGraph α} [G.Connected] {z p y : α}
     have hw : G.Walk z y := SimpleGraph.Walk.cons hzp q
     have hlen : hw.length = 1 + (G.edist p y).toNat := by
       rw [SimpleGraph.Walk.length_cons, hq]
-    calc G.edist z y ≤ hw.length := SimpleGraph.edist_le hw
-    _ = 1 + G.edist p y := by rw [hlen, hcoe]; norm_cast
+    calc G.edist z y ≤ ((hw.length : ℕ) : ℕ∞) := SimpleGraph.edist_le hw
+    _ = ((1 + (G.edist p y).toNat : ℕ) : ℕ∞) := by rw [hlen]
+    _ = 1 + G.edist p y := by rw [← hcoe]; simp
   have hdown : 1 + G.edist p y ≤ G.edist z y := by
     refine le_iInf fun w => ?_
     cases w with
@@ -197,19 +202,19 @@ lemma edist_leaf_eq {G : SimpleGraph α} [G.Connected] {z p y : α}
       subst hxp
       calc (1 : ℕ∞) + G.edist p y ≤ 1 + w'.length :=
           add_le_add_left (SimpleGraph.edist_le w') _
-      _ = (SimpleGraph.Walk.cons h w').length := by
+      _ = ((SimpleGraph.Walk.cons h w').length : ℕ∞) := by
           rw [SimpleGraph.Walk.length_cons]; simp
   exact le_antisymm hup hdown
 
 /-- **F6.** If `z` is a leaf with neighbour `p` in a connected graph on at
 least three vertices, then `1 + ecc(p) ≤ ecc(z)`; in particular `z` is not
-central (`radius < ecc(z)` follows with `radius_le_eccent`). -/
-lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} [G.Connected]
+central (combine with `radius_le_eccent`). -/
+lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
     {z p : α} (hdeg : G.degree z = 1) (hzp : G.Adj z p)
     (hn3 : 3 ≤ Fintype.card α) :
     (1 : ℕ∞) + G.eccent p ≤ eccOn G Finset.univ z := by
+  haveI : Nonempty α := ⟨p⟩
   obtain ⟨y, hymax⟩ := Finite.exists_max (f := fun x : α => G.edist p x)
-    (by exact Nonempty.of_finset Finset.univ_nonempty)
   have heccy : G.eccent p = G.edist p y :=
     le_antisymm (iSup_le hymax) (le_iSup y)
   by_cases hyz : y = z
@@ -217,29 +222,30 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} [G.Connected]
     subst hyz
     have hecc1 : G.eccent p = 1 := by
       rw [heccy]
-      refine le_antisymm ?_ ?_
-      · exact SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp)
-      · have hpz : p ≠ z := G.ne_of_adj hzp
-        exact Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne hpz)
+      refine le_antisymm ?_ (Order.one_le_iff_pos.mpr
+        (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hzp).symm))
+      have h1 : G.edist p z ≤ 1 :=
+        le_trans (SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp))
+          (by simp [SimpleGraph.Adj.toWalk])
+      simpa using h1
     obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
     calc (1 : ℕ∞) + G.eccent p = 2 := by rw [hecc1]; norm_num
-    _ ≤ 1 + G.edist p t := by
-        have h1 : (1 : ℕ∞) ≤ G.edist p t :=
-          Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)
-        linarith
-    _ = G.edist z t := (edist_leaf_eq hdeg hzp htz).symm
+    _ = 1 + 1 := rfl
+    _ ≤ 1 + G.edist p t := add_le_add_left
+        (Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)) _
+    _ = G.edist z t := (edist_leaf_eq hconn hdeg hzp htz).symm
     _ ≤ eccOn G Finset.univ z := edist_le_eccOn (Finset.mem_univ t)
   · calc (1 : ℕ∞) + G.eccent p = 1 + G.edist p y := by rw [heccy]
-    _ = G.edist z y := (edist_leaf_eq hdeg hzp hyz).symm
+    _ = G.edist z y := (edist_leaf_eq hconn hdeg hzp hyz).symm
     _ ≤ eccOn G Finset.univ z := edist_le_eccOn (Finset.mem_univ y)
 
 /-- Corollary of F6: a leaf is not central. -/
-lemma radius_lt_eccOn_of_isLeaf {G : SimpleGraph α} [G.Connected]
+lemma radius_lt_eccOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
     {z p : α} (hdeg : G.degree z = 1) (hzp : G.Adj z p)
     (hn3 : 3 ≤ Fintype.card α) :
     (1 : ℕ∞) + G.radius ≤ eccOn G Finset.univ z :=
   le_trans (add_le_add_left G.radius_le_eccent _)
-    (one_add_eccent_parent_le_eccOn hdeg hzp hn3)
+    (one_add_eccent_parent_le_eccOn hconn hdeg hzp hn3)
 
 /-! ## F11: the neighbour of a leaf is a cut vertex -/
 
@@ -250,7 +256,7 @@ lemma isCut_of_isLeaf {G : SimpleGraph α} {z p : α}
     (hzn : z ≠ p) (hn3 : 3 ≤ Fintype.card α) : IsCut G p := by
   intro hdel
   obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
-  obtain ⟨w, hw⟩ := hdel z t hzn htz
+  obtain ⟨w, hw⟩ := hdel z t hzn htp
   cases w with
   | nil => exact htz rfl
   | @cons h x w' =>
@@ -270,7 +276,7 @@ def IsUniqueEccentricPoint (G : SimpleGraph α) (c x : α) : Prop :=
     ∀ y : α, y ≠ x → G.dist c y < (G.eccent c).toNat
 
 lemma isUniqueEccentricPoint_unique {G : SimpleGraph α} {c x x' : α}
-    (h : G.IsUniqueEccentricPoint c x) (h' : G.IsUniqueEccentricPoint c x') :
+    (h : IsUniqueEccentricPoint G c x) (h' : IsUniqueEccentricPoint G c x') :
     x = x' := by
   by_contra hne
   have hlt := h.2 x' (fun hh => hne (by rw [hh]))
