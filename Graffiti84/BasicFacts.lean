@@ -786,8 +786,8 @@ theorem geodesic_adj_support_succ {G : SimpleGraph α} (hconn : G.Connected)
       by_contra hc
       push_neg at hc
       rcases Nat.eq_or_lt_of_le hc with h1' | h1'
-      · exact hne h1'.symm
-      · exact hidx (le_antisymm (by omega) hle)
+      · exact hne (by omega)
+      · exact hidx (le_antisymm hle (by omega))
     set w := ((p.takeUntil a ha).append (SimpleGraph.Adj.toWalk hadj)).append
       (p.dropUntil b hb) with hwdef
     have hwlen : w.length =
@@ -813,8 +813,8 @@ theorem geodesic_adj_support_succ {G : SimpleGraph α} (hconn : G.Connected)
       by_contra hc
       push_neg at hc
       rcases Nat.eq_or_lt_of_le hc with h1' | h1'
-      · exact hne h1'.symm
-      · exact hidx (le_antisymm (by omega) hle')
+      · exact hne (by omega)
+      · exact hidx (le_antisymm hle' (by omega))
     set w := ((p.takeUntil b hb).append (SimpleGraph.Adj.toWalk hadj.symm)).append
       (p.dropUntil a ha) with hwdef
     have hwlen : w.length =
