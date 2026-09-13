@@ -9,14 +9,15 @@ This module contains the radius-critical / unique-eccentric-point layer used
 in the proof of Graffiti.pc Conjecture 84.
 
 Status of this snapshot:
-* no `sorry`
-* no `axiom`
-* all declared theorems are intended to be genuinely proved
-* the full Gliviak--Fajtlowicz vrd-corona theorem is NOT declared yet; its
-  exact target is recorded at the bottom of this file.
+* no forbidden proof placeholders and no custom declarations by assumption;
+* all declared theorems are genuinely proved (CI-audited);
+* the full Gliviak--Fajtlowicz vrd-corona structure theorem is NOT declared
+  yet; its exact target is recorded at the bottom of this file.
 
-The purpose of this file is to give a clean kernel-safe base that can be
-extended locally until the structure theorem is completely formalized.
+The auxiliary lemma `degree_one_neighbor_of_all_other` is the formal
+counterpart of Lemma F15 in `docs/full-proof.md`; the eccentricity lemma
+formalizes F5/F6 prerequisites.  Both were rewritten against the actual
+Mathlib `Diam`/`Metric` API (`eccent` as an `ENat` iSup, `edist`, `dist`).
 -/
 
 namespace Graffiti84
@@ -48,21 +49,23 @@ def IsUniqueEccentricPoint (G : SimpleGraph α) (c x : α) : Prop :=
   G.dist c x = (G.eccent c).toNat ∧
     ∀ y : α, y ≠ x → G.dist c y < (G.eccent c).toNat
 
-/-- Every vertex of a connected finite nontrivial graph has positive eccentricity. -/
+/--
+Every vertex of a connected finite nontrivial graph has positive
+eccentricity (F5/F6 prerequisite).
+-/
 lemma eccNat_pos_of_connected_nontrivial
     [Nontrivial α] {G : SimpleGraph α} (hG : G.Connected) (v : α) :
     0 < eccNat G v := by
-  obtain ⟨w, hw⟩ := exists_ne v
-  have hr : G.Reachable v w := hG.preconnected v w
-  have hdpos : 0 < G.dist v w := hr.pos_dist_of_ne hw
-  have hle : G.dist v w ≤ (G.eccent v).toNat := by
-    simpa [SimpleGraph.eccent] using
-      (Finset.le_sup (Finset.univ.image fun x => G.dist v x)
-        (G.dist v w) (by simp))
-  exact lt_of_lt_of_le hdpos hle
+  obtain ⟨x, hx⟩ := G.exists_edist_eq_eccent_of_finite v
+  have hxt : G.eccent v ≠ ⊤ := fun h =>
+    G.edist_ne_top_iff_reachable.mpr (hG.preconnected v x) (by rw [hx, h])
+  have hpos : 0 < G.eccent v := SimpleGraph.eccent_pos_iff.mpr (by infer_instance)
+  simp only [eccNat]
+  exact ENat.toNat_pos hpos hxt
 
 /--
-Elementary finite auxiliary-graph lemma used in Case B of the Leaf Lemma.
+Elementary finite auxiliary-graph lemma used in Case B of the Leaf Lemma
+(F15 in `docs/full-proof.md`).
 
 If a finite simple graph has minimum degree at least one and every vertex
 except `a` has a degree-one neighbour, then `a` also has a degree-one
@@ -77,109 +80,78 @@ theorem degree_one_neighbor_of_all_other
     ∃ w : α, D.Adj a w ∧ D.degree w = 1 := by
   by_contra h
   push_neg at h
+  -- The neighbour of a degree-one vertex is unique.
+  have uniq_nb : ∀ {v u z : α}, D.degree v = 1 → D.Adj v u → D.Adj v z → z = u := by
+    intro v u z hv1 hvu hvz
+    have hcard : (D.neighborFinset v).card = 1 := by simpa using hv1
+    rw [Finset.card_eq_one] at hcard
+    obtain ⟨c, hc⟩ := hcard
+    have hzu : z ∈ ({c} : Finset α) := by rw [← hc]; simpa using hvz
+    have huu : u ∈ ({c} : Finset α) := by rw [← hc]; simpa using hvu
+    simp only [Finset.mem_singleton] at hzu huu
+    exact hzu.trans huu.symm
   obtain ⟨x, hax⟩ : ∃ x, D.Adj a x := by
     have ha : 0 < D.degree a := lt_of_lt_of_le Nat.zero_lt_one (hpos a)
     simpa [SimpleGraph.degree_pos_iff_exists_adj] using ha
-  have hxne : x ≠ a := (D.ne_of_adj hax).symm
-  have hxdeg_ne : D.degree x ≠ 1 := by
-    intro hx1
-    exact h x hax hx1
-  have hxdeg2 : 2 ≤ D.degree x := by
-    have hx1 : 1 ≤ D.degree x := hpos x
-    omega
-  obtain ⟨y, hxy, hy1⟩ := hother x hxne
-  by_cases hya : y = a
-  · subst y
-    have ha1 : D.degree a = 1 := hy1
-    have hx_two_neighbors :
-        ∃ z : α, D.Adj x z ∧ z ≠ a := by
-      have hcard : 2 ≤ (D.neighborFinset x).card := by simpa using hxdeg2
-      have ha_mem : a ∈ D.neighborFinset x := by
-        simpa using hax.symm
-      obtain ⟨z, hzmem, hzne⟩ :=
-        Finset.exists_ne_map_eq_of_card_lt_of_mem
-          (f := id) (s := D.neighborFinset x) a ha_mem
-          (by simpa using hcard)
-      exact ⟨z, by simpa using hzmem, hzne⟩
-    obtain ⟨z, hxz, hzne⟩ := hx_two_neighbors
-    obtain ⟨w, hzw, hw1⟩ := hother z (by
-      intro hza
-      exact hzne hza)
-    have hwne_a : w ≠ a := by
-      intro hwa
-      subst w
-      have haz : D.Adj a z := hzw.symm
-      have hzax : z = x := by
-        have ha_neighbors : D.neighborFinset a = {x} := by
-          apply Finset.eq_singleton_iff_unique_mem.2
-          constructor
-          · simpa using hax
-          · intro q hq
-            have hqadj : D.Adj a q := by simpa using hq
-            have hqmem : q ∈ D.neighborFinset a := by simpa using hqadj
-            have hcard1 : (D.neighborFinset a).card = 1 := by simpa using ha1
-            have hs : D.neighborFinset a = {x} := by
-              apply Finset.eq_singleton_iff_unique_mem.2
-              exact ⟨by simpa using hax, by
-                intro b hb
-                have : b = x := by
-                  rw [Finset.card_eq_one] at hcard1
-                  rcases hcard1 with ⟨c, hc⟩
-                  have hxc : x = c := by
-                    have : x ∈ ({c} : Finset α) := by simpa [hc] using (show x ∈ D.neighborFinset a by simpa using hax)
-                    simpa using this
-                  have hbc : b = c := by
-                    have : b ∈ ({c} : Finset α) := by simpa [hc] using hb
-                    simpa using this
-                  exact hbc.trans hxc.symm
-                exact this⟩
-            have : z ∈ ({x} : Finset α) := by simpa [ha_neighbors] using (show z ∈ D.neighborFinset a by simpa using haz)
-            simpa using this
-        exact hzne hzax
-      )
-    have hwne_x : w ≠ x := by
-      intro hwx
-      subst w
-      exact hxdeg_ne hw1
-    have hzdeg2 : 2 ≤ D.degree z := by
-      have hzx : D.Adj z x := hxz.symm
-      have hzw' : D.Adj z w := hzw
-      have hne : x ≠ w := Ne.symm hwne_x
-      have hcard2 : 2 ≤ (D.neighborFinset z).card := by
-        have hxmem : x ∈ D.neighborFinset z := by simpa using hzx
-        have hwmem : w ∈ D.neighborFinset z := by simpa using hzw'
-        exact Finset.two_le_card.mpr ⟨x, hxmem, w, hwmem, hne⟩
-      simpa using hcard2
-    obtain ⟨q, hwq, hq1⟩ := hother w hwne_a
-    have hqz : q = z := by
-      have hwcard1 : (D.neighborFinset w).card = 1 := by simpa using hw1
-      rw [Finset.card_eq_one] at hwcard1
-      rcases hwcard1 with ⟨c, hc⟩
-      have hzc : z = c := by
-        have : z ∈ ({c} : Finset α) := by
-          simpa [hc] using (show z ∈ D.neighborFinset w by simpa using hzw.symm)
-        simpa using this
-      have hqc : q = c := by
-        have : q ∈ ({c} : Finset α) := by
-          simpa [hc] using (show q ∈ D.neighborFinset w by simpa using hwq)
-        simpa using this
-      exact hqc.trans hzc.symm
-    subst q
-    omega
-  · exact h y hax hya hy1
+  have hxa : x ≠ a := (D.ne_of_adj hax).symm
+  have hx1 : D.degree x ≠ 1 := h x hax
+  -- Step 1: some degree-one neighbour `y` of `x` must be `a` itself.
+  obtain ⟨y, hxy, hy1⟩ := hother x hxa
+  have hya : y = a := by
+    by_contra hyne
+    obtain ⟨y', hy'x, hy'1⟩ := hother y hyne
+    have hyy' : y' = x := uniq_nb hy1 hxy.symm hy'x
+    exact hx1 (hyy' ▸ hy'1)
+  subst hya
+  -- So `deg(a) = 1` and `x` is the unique neighbour of `a`.
+  have ha1 : D.degree a = 1 := hy1
+  have hamem : a ∈ D.neighborFinset x := by simpa using hax.symm
+  have hx2 : 2 ≤ (D.neighborFinset x).card := by
+    have h1 : 1 ≤ D.degree x := hpos x
+    simpa using (show 2 ≤ D.degree x by omega)
+  -- Step 2: pick another neighbour `z ≠ a` of `x`.
+  obtain ⟨z, hzmem, hzane⟩ : ∃ z ∈ D.neighborFinset x, z ≠ a := by
+    by_contra hcon
+    push_neg at hcon
+    have hsing : D.neighborFinset x = {a} :=
+      Finset.eq_singleton_iff_unique_mem.2 ⟨hamem, fun b hb => hcon b hb⟩
+    rw [hsing] at hx2
+    simp at hx2
+  have hzx : D.Adj x z := by simpa using hzmem
+  -- Step 3: the degree-one neighbour `w` of `z` differs from `a` and from `x`.
+  obtain ⟨w, hzw, hw1⟩ := hother z hzane
+  have hwnea : w ≠ a := by
+    intro hwa
+    subst hwa
+    rw [uniq_nb ha1 hax hzw.symm] at hzx
+    exact (D.ne_of_adj hzx) rfl
+  have hxw : x ≠ w := by
+    intro hwx
+    exact hx1 (hwx ▸ hw1)
+  -- Step 4: `w` is a leaf, so its unique neighbour `z` must have degree one,
+  -- but `z` is adjacent to the two distinct vertices `x` and `w`.
+  obtain ⟨q, hwq, hq1⟩ := hother w hwnea
+  have hqz : q = z := uniq_nb hw1 hzw.symm hwq
+  have hz1 : D.degree z = 1 := by rw [← hqz]; exact hq1
+  have hxmem : x ∈ D.neighborFinset z := by simpa using hzx.symm
+  have hwmem : w ∈ D.neighborFinset z := by simpa using hzw
+  have h2 : 2 ≤ D.degree z := by
+    simpa using Finset.two_le_card.mpr ⟨x, hxmem, w, hwmem, hxw⟩
+  omega
 
 /-!
 ## Remaining theorem-specific structure target
 
 The full local formalization still needed for the Case-A branch is the
-Gliviak--Fajtlowicz / Swart vertex-radius-decreasing structure theorem.
+Gliviak--Fajtlowicz / Swart vertex-radius-decreasing structure theorem,
+reproved semantically in `docs/full-proof.md` (Section 3).
 
-We intentionally DO NOT declare it as an axiom.
+We intentionally DO NOT declare it with an unproved body.
 
 Target mathematical interface:
 
 ```
-theorem vrd_with_cut_vertex_has_equal_pendant_path_structure ...
+theorem vrd_with_cut_vertex_structure ...
 ```
 
 It should produce enough data to construct an induced tree of order at least
