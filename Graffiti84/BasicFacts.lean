@@ -243,7 +243,7 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
         (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hzp).symm))
     obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
     have hpt : (1 : ℕ∞) ≤ G.edist p t :=
-      Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)
+      Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp.symm)
     calc (1 : ℕ∞) + G.eccent p = 2 := by rw [hecc1]; norm_num
     _ = 1 + 1 := rfl
     _ ≤ 1 + G.edist p t := add_le_add (le_refl 1) hpt
