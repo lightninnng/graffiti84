@@ -160,7 +160,7 @@ lemma radOn_le_radOn_erase_add_one {G : SimpleGraph α} {S : Finset α} {v : α}
       have h5 : G.edist c w ≤ eccOn G (S.erase v) c := edist_le_eccOn hwse
       calc G.edist c x = G.edist c v := by rw [hxv]
       _ ≤ G.edist c w + 1 := edist_le_add_edge hR hwadj.symm
-      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add (le_refl _) h5
+      _ ≤ eccOn G (S.erase v) c + 1 := add_le_add h5 (le_refl 1)
     · have hx' : x ∈ S.erase v := Finset.mem_erase.mpr ⟨hxv, hx⟩
       calc G.edist c x ≤ eccOn G (S.erase v) c := edist_le_eccOn hx'
       _ ≤ eccOn G (S.erase v) c + 1 := le_self_add
@@ -207,8 +207,8 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
     refine le_iInf fun w => ?_
     cases w with
     | nil => exact absurd rfl hy
-    | cons h w' =>
-      have hxp := adj_eq_of_degree_eq_one hdeg h hzp
+    | @cons _ x _ h w' =>
+      have hxp : x = p := adj_eq_of_degree_eq_one hdeg h hzp
       subst hxp
       calc (1 : ℕ∞) + G.edist p y ≤ 1 + w'.length :=
           add_le_add_left (SimpleGraph.edist_le w') _
@@ -225,8 +225,9 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
     (1 : ℕ∞) + G.eccent p ≤ eccOn G Finset.univ z := by
   haveI : Nonempty α := ⟨p⟩
   obtain ⟨y, hymax⟩ := Finite.exists_max (f := fun x : α => G.edist p x)
-  have heccy : G.eccent p = G.edist p y :=
-    le_antisymm (iSup_le hymax) (le_iSup y)
+  have heccy : G.eccent p = G.edist p y := by
+    rw [SimpleGraph.eccent]
+    exact le_antisymm (iSup_le hymax) (le_iSup y)
   by_cases hyz : y = z
   · -- the parent's farthest vertex is the leaf itself: ecc(p) = 1
     subst hyz
