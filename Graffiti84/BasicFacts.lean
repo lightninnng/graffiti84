@@ -526,7 +526,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     cases q with
     | nil => exact absurd rfl hx
     | cons h _ => exact ⟨_, h⟩
-  have hwne : w ≠ v := (G.ne_of_adj hw).symm
+  have hwne : w ≠ v := (G.ne_of_adj hwadj).symm
   have hwse : w ∈ Finset.univ.erase v := Finset.mem_erase.mpr
     ⟨hwne, Finset.mem_univ w⟩
   have hw' : G.edist c w ≤ radOn G (Finset.univ.erase v) :=
@@ -539,7 +539,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     intro x _
     by_cases hxv : x = v
     · calc G.edist c x = G.edist c v := by rw [hxv]
-      _ ≤ G.edist c w + 1 := edist_le_add_edge (hconn.preconnected c w) hw.symm
+      _ ≤ G.edist c w + 1 := edist_le_add_edge (hconn.preconnected c w) hwadj.symm
       _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
     · exact le_trans (edist_le_eccOn
         (G := G) (S := Finset.univ.erase v) (c := c)
@@ -574,7 +574,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
     have hed : G.edist c v = G.eccent c := by
       refine le_antisymm ?_ ?_
       · calc G.edist c v ≤ G.edist c w + 1 :=
-            edist_le_add_edge (hconn.preconnected c w) hw.symm
+            edist_le_add_edge (hconn.preconnected c w) hwadj.symm
         _ ≤ radOn G (Finset.univ.erase v) + 1 := add_le_add hw' (le_refl 1)
         _ = G.eccent c := heq.symm
       · intro hcon
