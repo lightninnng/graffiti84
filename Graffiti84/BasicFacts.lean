@@ -236,16 +236,16 @@ lemma one_add_eccent_parent_le_eccOn {G : SimpleGraph α} (hconn : G.Connected)
       rw [heccy]
       have htw : (SimpleGraph.Adj.toWalk hzp).length = 1 := by
         simp [SimpleGraph.Adj.toWalk]
-      have h2 : G.edist p z ≤ ((SimpleGraph.Adj.toWalk hzp).length : ℕ∞) :=
-        SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp)
+      have h2 : G.edist p z ≤ ((SimpleGraph.Adj.toWalk hzp.symm).length : ℕ∞) :=
+        SimpleGraph.edist_le (SimpleGraph.Adj.toWalk hzp.symm)
       rw [htw] at h2
       exact le_antisymm h2 (Order.one_le_iff_pos.mpr
         (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hzp).symm))
     obtain ⟨t, htz, htp⟩ := exists_ne_pair_of_three hn3
     calc (1 : ℕ∞) + G.eccent p = 2 := by rw [hecc1]; norm_num
     _ = 1 + 1 := rfl
-    _ ≤ 1 + G.edist p t := add_le_add_left
-        (Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)) _
+    _ ≤ 1 + G.edist p t := add_le_add_right
+        (Order.one_le_iff_pos.mpr (SimpleGraph.edist_pos_of_ne htp)) 1
     _ = G.edist z t := (edist_leaf_eq hconn hdeg hzp htz).symm
     _ ≤ eccOn G Finset.univ z := edist_le_eccOn (Finset.mem_univ t)
   · calc (1 : ℕ∞) + G.eccent p = 1 + G.edist p y := by rw [heccy]
@@ -257,7 +257,7 @@ lemma radius_lt_eccOn_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
     {z p : α} (hdeg : G.degree z = 1) (hzp : G.Adj z p)
     (hn3 : 3 ≤ Fintype.card α) :
     (1 : ℕ∞) + G.radius ≤ eccOn G Finset.univ z :=
-  le_trans (add_le_add_left G.radius_le_eccent _)
+  le_trans (add_le_add_right G.radius_le_eccent 1)
     (one_add_eccent_parent_le_eccOn hconn hdeg hzp hn3)
 
 /-! ## F11: the neighbour of a leaf is a cut vertex -/
@@ -293,6 +293,7 @@ lemma isUniqueEccentricPoint_unique {G : SimpleGraph α} {c x x' : α}
     x = x' := by
   by_contra hne
   have hlt := h.2 x' (fun hh => hne (by rw [hh]))
-  exact absurd h'.1 hlt
+  rw [h'.1] at hlt
+  exact absurd hlt (lt_irrefl _)
 
 end Graffiti84
