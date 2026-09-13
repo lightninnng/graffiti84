@@ -606,7 +606,7 @@ lemma isUniqueEccentricPoint_of_radOn_erase {G : SimpleGraph α}
               refine ENat.coe_lt_coe.mp ?_
               rw [hcoV, hcoP]
               exact hcon
-            rw [hcoV]
+            rw [← hcoV]
             exact le_trans (ENat.coe_le_coe.mpr (Nat.le_of_lt_succ hnat))
               (le_of_eq hcoP)
           · exact (edist_le_eccOn
