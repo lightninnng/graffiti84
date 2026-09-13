@@ -212,7 +212,7 @@ lemma edist_leaf_eq {G : SimpleGraph α} (hconn : G.Connected) {z p y : α}
       have hxp : x = p := adj_eq_of_degree_eq_one hdeg h hzp
       subst hxp
       calc (1 : ℕ∞) + G.edist x y ≤ 1 + w'.length :=
-          add_le_add_left (SimpleGraph.edist_le w') _
+          add_le_add_right (SimpleGraph.edist_le w') 1
       _ = ((SimpleGraph.Walk.cons h w').length : ℕ∞) := by
           rw [SimpleGraph.Walk.length_cons]; simp
   exact le_antisymm hup hdown
