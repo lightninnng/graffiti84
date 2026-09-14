@@ -142,7 +142,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have hnbedge : G.edist nb a ≤ 1 := by
     have hw1 : G.Walk nb a := SimpleGraph.Adj.toWalk hnb.symm
     have hh := SimpleGraph.edist_le hw1
-    simp only [SimpleGraph.Adj.toWalk] at hh
+    rw [show (SimpleGraph.Adj.toWalk hnb.symm).length = 1 from rfl] at hh
     exact hh
   have hnbρ : G.edist v₀ nb ≤ ρ := hedρ nb
     (Finset.mem_erase.mpr ⟨hnbne, Finset.mem_univ nb⟩)
@@ -161,7 +161,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have hradius : G.radius = ρ + 1 := by
     refine le_antisymm ?_ hdrop
     refine le_trans (SimpleGraph.radius_le_eccent (u := v₀)) ?_
-    refine (SimpleGraph.eccent_le_iff v₀ ρ).mpr ?_
+    refine (SimpleGraph.eccent_le_iff v₀ (ρ + 1)).mpr ?_
     intro y
     by_cases hy : y = a
     · rw [hy]
@@ -182,14 +182,16 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
         refine (SimpleGraph.eccent_le_iff v₀ ρ).mpr ?_
         intro y
         by_cases hy : y = a
-        · rw [hy]; exact hcon
+        · rw [hy]
+          have h' : G.edist v₀ a < ρ + 1 := by rw [hradius]; exact hcon
+          exact (ENat.lt_add_one_iff hρtop).mp h'
         · exact hedρ y (Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩)
       have hle : G.radius ≤ ρ :=
         le_trans (SimpleGraph.radius_le_eccent (u := v₀)) heccρ
       rw [hradius] at hle
       have hlt : ρ < ρ + 1 := by
         have hcast : ((ρ.toNat + 1 : ℕ) : ℕ∞) = ρ + 1 := by
-          rw [hρc, Nat.cast_add, Nat.cast_one]
+          rw [Nat.cast_add, Nat.cast_one, ← hρc]
         rw [hcast]
         exact ENat.coe_lt_coe.mpr (Nat.lt_succ_self ρ.toNat)
       exact absurd (lt_of_lt_of_le hlt hle) (lt_irrefl ρ)
@@ -206,6 +208,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   obtain ⟨w, hw⟩ := G.exists_edist_eq_eccent_of_finite v₂
   have hdv₂a : G.dist v₂ a + 2 = G.radius.toNat := by
     have hpre := dist_getVert_end_of_length_eq_dist hp 2 (by omega)
+    rw [← hv₂def] at hpre
     omega
   have hwne : w ≠ a := by
     intro h
