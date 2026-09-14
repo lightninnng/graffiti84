@@ -260,8 +260,7 @@ theorem dist_getVert_pair_le {G : SimpleGraph α}
     rw [SimpleGraph.Walk.take_length]
     exact Nat.min_eq_left hj
   have hstart : (p.take j).getVert i = p.getVert i := by
-    rw [SimpleGraph.Walk.take_getVert]
-    simp only [Nat.min_eq_left hij]
+    rw [SimpleGraph.Walk.take_getVert, Nat.min_eq_right hij]
   have hseg : ((p.take j).drop i).length = j - i := by
     rw [SimpleGraph.Walk.drop_length, htakej]
     omega
@@ -275,16 +274,20 @@ theorem dist_getVert_pair_le {G : SimpleGraph α}
     have hstart2 : G.dist u (p.getVert i) = i :=
       dist_getVert_of_length_eq_dist hp i hi
     obtain ⟨s, hs⟩ := ((p.take i).reachable).exists_walk_length_eq_dist
-    have hsplit : ((s.append ((p.take j).drop i)).append (p.drop j)).length
+    have hsegwalk : G.Walk (p.getVert i) (p.getVert j) :=
+      ((p.take j).drop i).copy hstart rfl
+    have hseglencopy : hsegwalk.length = j - i := by
+      simp only [hsegwalk, SimpleGraph.Walk.length_copy]
+      exact hseg
+    have hsplit : ((s.append hsegwalk).append (p.drop j)).length
         = s.length + (j - i) + (p.length - j) := by
       rw [SimpleGraph.Walk.length_append, SimpleGraph.Walk.length_append,
-        hseg]
-    have hshort : ((s.append ((p.take j).drop i)).append (p.drop j)).length
+        hseglencopy]
+    have hshort : ((s.append hsegwalk).append (p.drop j)).length
         < p.length := by
       rw [hsplit, hs, hstart2]
       omega
-    have hd := SimpleGraph.dist_le ((s.append ((p.take j).drop i)).append
-      (p.drop j))
+    have hd := SimpleGraph.dist_le ((s.append hsegwalk).append (p.drop j))
     rw [← hp] at hd
     omega
 
@@ -311,10 +314,13 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have h12 : G.dist (p.getVert 2) (p.getVert 1) = 1 := by
     rw [SimpleGraph.dist_comm]
     exact dist_getVert_pair_le hp 1 2 (by omega) (by omega)
+  have hdv₂w' : G.radius.toNat ≤ G.dist (p.getVert 2) w := by
+    rw [hv₂]
+    exact hdv₂w
   refine ⟨v₀, v₂, w, p, q, hp.trans hdva, ?_, ?_, hv₂,
     (hp.trans hdva).le.trans hdv₂w, ?_, ?_, ?_, ?_⟩
   · exact by rw [hq, hp, hdva]; exact hdvw
-  · exact le_trans hr2 (hp.trans hdva)
+  · exact le_trans hr2 (hp.trans hdva).symm.le
   · -- (7a): no q_i - v_j chord for j >= 2
     intro i j him hjr h2j hadj
     have hedge := hed1 (p.getVert j) (q.getVert i) hadj.symm
@@ -330,12 +336,13 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hpair := dist_getVert_pair_le hp 2 j (by omega) hjr
     have hqw : G.dist (q.getVert i) w = q.length - i :=
       dist_getVert_end_of_length_eq_dist hq i him
-    have hd : G.dist v₂ w ≤ (j - 2) + 1 + (q.length - i) := by
-      have ht1 := hconn.dist_triangle (u := v₂) (v := p.getVert j) (w := w)
+    have hd : G.dist (p.getVert 2) w ≤ (j - 2) + 1 + (q.length - i) := by
+      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert j)
+        (w := w)
       have ht2 := hconn.dist_triangle (u := p.getVert j) (v := q.getVert i)
         (w := w)
       rw [hqw] at ht2
-      rw [← hv₂, hpair] at ht1
+      rw [hpair] at ht1
       omega
     omega
   · -- (7b): no v1 - p_i chord for i >= 2
@@ -343,12 +350,13 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hedge := hed1 (p.getVert 1) (q.getVert i) hadj
     have hqw : G.dist (q.getVert i) w = q.length - i :=
       dist_getVert_end_of_length_eq_dist hq i him
-    have hd : G.dist v₂ w ≤ 1 + 1 + (q.length - i) := by
-      have ht1 := hconn.dist_triangle (u := v₂) (v := p.getVert 1) (w := w)
+    have hd : G.dist (p.getVert 2) w ≤ 1 + 1 + (q.length - i) := by
+      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+        (w := w)
       have ht2 := hconn.dist_triangle (u := p.getVert 1) (v := q.getVert i)
         (w := w)
       rw [hqw] at ht2
-      rw [← hv₂, h12] at ht1
+      rw [h12] at ht1
       omega
     omega
   · -- (7c): the chord v1 - p1 forces m = r - 1
@@ -356,12 +364,13 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hedge := hed1 (p.getVert 1) (q.getVert 1) hadj
     have hq1 : G.dist (q.getVert 1) w = q.length - 1 :=
       dist_getVert_end_of_length_eq_dist hq 1 (by omega)
-    have hd : G.dist v₂ w ≤ 1 + 1 + (q.length - 1) := by
-      have ht1 := hconn.dist_triangle (u := v₂) (v := p.getVert 1) (w := w)
+    have hd : G.dist (p.getVert 2) w ≤ 1 + 1 + (q.length - 1) := by
+      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+        (w := w)
       have ht2 := hconn.dist_triangle (u := p.getVert 1) (v := q.getVert 1)
         (w := w)
       rw [hq1] at ht2
-      rw [← hv₂, h12] at ht1
+      rw [h12] at ht1
       omega
     omega
   · -- supports overlap only at v0
@@ -378,9 +387,10 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       subst h1
       have hq1 : G.dist (q.getVert 1) w = q.length - 1 :=
         dist_getVert_end_of_length_eq_dist hq 1 (by omega)
-      have hd : G.dist v₂ w ≤ 1 + (q.length - 1) := by
-        have ht1 := hconn.dist_triangle (u := v₂) (v := p.getVert 1) (w := w)
-        rw [← hv₂, h12] at ht1
+      have hd : G.dist (p.getVert 2) w ≤ 1 + (q.length - 1) := by
+        have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+          (w := w)
+        rw [h12] at ht1
         rw [heq] at ht1
         omega
       omega
@@ -388,9 +398,10 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       have hpair := dist_getVert_pair_le hp 2 i (by omega) hir
       have hqw : G.dist (q.getVert i) w = q.length - i :=
         dist_getVert_end_of_length_eq_dist hq i hjm
-      have hd : G.dist v₂ w ≤ (i - 2) + (q.length - i) := by
-        have ht1 := hconn.dist_triangle (u := v₂) (v := p.getVert i) (w := w)
-        rw [← hv₂, hpair] at ht1
+      have hd : G.dist (p.getVert 2) w ≤ (i - 2) + (q.length - i) := by
+        have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert i)
+          (w := w)
+        rw [hpair] at ht1
         rw [heq] at ht1
         omega
       omega
