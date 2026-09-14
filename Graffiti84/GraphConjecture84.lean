@@ -72,7 +72,7 @@ noncomputable def minDegree (G : SimpleGraph α) [Nonempty α] : ℕ :=
 lemma degree_ge_minDegree {G : SimpleGraph α} [Nonempty α] {v : α} :
     minDegree G ≤ G.degree v := by
   simp only [minDegree]
-  exact Finset.inf'_le v (Finset.mem_univ v)
+  exact Finset.inf'_le (fun w => G.degree w) v (Finset.mem_univ v)
 
 /-- **Conjecture 84, minimum-degree-at-least-two branch (graph level).**
 A connected graph with `δ ≥ 2` satisfies `2r ≤ t·δ`. -/
@@ -93,7 +93,8 @@ theorem two_radius_le_treeNumber_mul_minDegree {G : SimpleGraph α} [Nonempty α
     exact hnt ⟨v, x, G.ne_of_adj hx⟩
   have hrad1 : (1 : ℕ∞) ≤ G.radius := by
     refine (le_iInf_iff).mpr fun u => ?_
-    have hu : 0 < G.eccent u := SimpleGraph.eccent_pos_iff u |>.mp inferInstance
+    have hu : 0 < G.eccent u :=
+      (SimpleGraph.eccent_pos_iff (G := G) u).mp inferInstance
     exact Order.one_le_iff_pos.mpr hu
   have hne0 : G.radius ≠ 0 := by
     intro h
