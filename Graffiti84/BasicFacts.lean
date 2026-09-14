@@ -1039,7 +1039,6 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         push_neg at hc
         refine hnt ?_
         rw [hm0, show n = Φ.length - 1 from by omega]
-        rfl
       have hna : w.getVert n = a := by
         rw [← hpointeq]
         simp only [hm0, SimpleGraph.Walk.getVert_zero]
