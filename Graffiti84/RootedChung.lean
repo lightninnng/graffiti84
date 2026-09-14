@@ -248,7 +248,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
 
 /-- On a geodesic, the distance between two positions is their separation:
 for `i <= j <= length`, `d(getVert i, getVert j) = j - i`. -/
-theorem dist_getVert_pair_le {G : SimpleGraph α}
+theorem dist_getVert_pair_le {G : SimpleGraph α} (hconn : G.Connected)
     {u v : α} {p : G.Walk u v} (hp : p.length = G.dist u v)
     (i j : ℕ) (hij : i ≤ j) (hj : j ≤ p.length) :
     G.dist (p.getVert i) (p.getVert j) = j - i := by
@@ -270,24 +270,12 @@ theorem dist_getVert_pair_le {G : SimpleGraph α}
   rcases Nat.eq_or_lt_of_le hle with h | h
   · exact h
   · exfalso
-    have hstart2 : G.dist u (p.getVert i) = i :=
-      dist_getVert_of_length_eq_dist hp i hi
-    obtain ⟨s, hs⟩ := ((p.take i).reachable).exists_walk_length_eq_dist
-    have hsegwalk : G.Walk (p.getVert i) (p.getVert j) :=
-      ((p.take j).drop i).copy hstart rfl
-    have hseglencopy : hsegwalk.length = j - i := by
-      simp only [SimpleGraph.Walk.length_copy]
-      exact hseg
-    have hsplit : ((s.append hsegwalk).append (p.drop j)).length
-        = s.length + (j - i) + (p.length - j) := by
-      rw [SimpleGraph.Walk.length_append, SimpleGraph.Walk.length_append,
-        hseglencopy]
-    have hshort : ((s.append hsegwalk).append (p.drop j)).length
-        < p.length := by
-      rw [hsplit, hs, hstart2]
-      omega
-    have hd := SimpleGraph.dist_le ((s.append hsegwalk).append (p.drop j))
-    rw [← hp] at hd
+    have ht1 := hconn.dist_triangle (u := u) (v := p.getVert i) (w := v)
+    have ht2 := hconn.dist_triangle (u := p.getVert i) (v := p.getVert j)
+      (w := v)
+    rw [dist_getVert_of_length_eq_dist hp i hi] at ht1
+    rw [dist_getVert_end_of_length_eq_dist hp i hi,
+      dist_getVert_end_of_length_eq_dist hp j hj] at ht2
     omega
 
 /-- **Chung chords.** Given the Chung context, all cross-chords between the
@@ -317,7 +305,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rw [hv₂]
     exact hdv₂w
   haveI : Nonempty α := hconn.nonempty
-  have hmle : q.length + 1 ≤ G.radius.toNat := by rw [← hq]; exact hdvw
+  have hmle : q.length + 1 ≤ G.radius.toNat := by rw [hq]; exact hdvw
   have hrle : G.radius.toNat ≤ p.length := (hp.trans hdva).symm.le
   refine ⟨v₀, v₂, w, p, q, hp.trans hdva, ?_, ?_, hv₂,
     (hp.trans hdva).le.trans hdv₂w, ?_, ?_, ?_, ?_⟩
@@ -331,7 +319,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
             hconn.dist_triangle (u := p.getVert 2) (v := p.getVert j)
               (w := w)
         _ = (j - 2) + G.dist (p.getVert j) w := by
-            rw [dist_getVert_pair_le hp 2 j (by omega) hjr]
+            simp only [dist_getVert_pair_le hconn hp 2 j (by omega) hjr]
         _ ≤ (j - 2) + (G.dist (p.getVert j) (q.getVert i)
               + G.dist (q.getVert i) w) := by
             exact add_le_add le_rfl
@@ -408,8 +396,8 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
                 (w := w)
           _ = 1 + G.dist (p.getVert 1) w := by rw [h12]
           _ = 1 + G.dist (q.getVert 1) w := by rw [heq]
-          _ = 1 + (q.length - 1) :=
-              (dist_getVert_end_of_length_eq_dist hq 1 (by omega))
+          _ = 1 + (q.length - 1) := by
+              rw [dist_getVert_end_of_length_eq_dist hq 1 (by omega)]
       omega
     · -- i >= 2
       have hchain : G.radius.toNat ≤ (i - 2) + (q.length - i) := by
@@ -418,10 +406,10 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
               hconn.dist_triangle (u := p.getVert 2) (v := p.getVert i)
                 (w := w)
           _ = (i - 2) + G.dist (p.getVert i) w := by
-              rw [dist_getVert_pair_le hp 2 i (by omega) hir]
+              simp only [dist_getVert_pair_le hconn hp 2 i (by omega) hir]
           _ = (i - 2) + G.dist (q.getVert i) w := by rw [heq]
-          _ = (i - 2) + (q.length - i) :=
-              (dist_getVert_end_of_length_eq_dist hq i hjm)
+          _ = (i - 2) + (q.length - i) := by
+              rw [dist_getVert_end_of_length_eq_dist hq i hjm]
       omega
 
 end Graffiti84
