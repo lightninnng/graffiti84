@@ -84,5 +84,5 @@ theorem getVert_ne_of_length_eq_dist {G : SimpleGraph α}
   intro heq
   have h1 := dist_getVert_of_length_eq_dist hp i hi
   have h2 := dist_getVert_of_length_eq_dist hp j hj
-  rw [heq] at h2
+  rw [← heq] at h2
   exact hij (h1.symm.trans h2)
