@@ -350,12 +350,9 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
               (w := w)
         _ ≤ 1 + (G.dist (p.getVert 1) (q.getVert i)
               + G.dist (q.getVert i) w) := by
-            have h0 := hconn.dist_triangle (u := p.getVert 2)
-              (v := p.getVert 1) (w := w)
-            rw [h12] at h0
-            exact le_trans h0 (add_le_add le_rfl
+            exact add_le_add h12.le
               (hconn.dist_triangle (u := p.getVert 1) (v := q.getVert i)
-                (w := w)))
+                (w := w))
         _ ≤ 1 + (1 + (q.length - i)) := by
             have h1 := hed1 (p.getVert 1) (q.getVert i) hadj
             have h2 := dist_getVert_end_of_length_eq_dist hq i him
@@ -370,12 +367,9 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
               (w := w)
         _ ≤ 1 + (G.dist (p.getVert 1) (q.getVert 1)
               + G.dist (q.getVert 1) w) := by
-            have h0 := hconn.dist_triangle (u := p.getVert 2)
-              (v := p.getVert 1) (w := w)
-            rw [h12] at h0
-            exact le_trans h0 (add_le_add le_rfl
+            exact add_le_add h12.le
               (hconn.dist_triangle (u := p.getVert 1) (v := q.getVert 1)
-                (w := w)))
+                (w := w))
         _ ≤ 1 + (1 + (q.length - 1)) := by
             have h1 := hed1 (p.getVert 1) (q.getVert 1) hadj
             have h2 := dist_getVert_end_of_length_eq_dist hq 1 (by omega)
