@@ -263,7 +263,6 @@ theorem dist_getVert_pair_le {G : SimpleGraph α}
     rw [SimpleGraph.Walk.take_getVert, Nat.min_eq_right hij]
   have hseg : ((p.take j).drop i).length = j - i := by
     rw [SimpleGraph.Walk.drop_length, htakej]
-    omega
   have hle : G.dist (p.getVert i) (p.getVert j) ≤ j - i := by
     have h := SimpleGraph.dist_le ((p.take j).drop i)
     rw [hseg, hstart] at h
@@ -277,7 +276,7 @@ theorem dist_getVert_pair_le {G : SimpleGraph α}
     have hsegwalk : G.Walk (p.getVert i) (p.getVert j) :=
       ((p.take j).drop i).copy hstart rfl
     have hseglencopy : hsegwalk.length = j - i := by
-      simp only [hsegwalk, SimpleGraph.Walk.length_copy]
+      simp only [SimpleGraph.Walk.length_copy]
       exact hseg
     have hsplit : ((s.append hsegwalk).append (p.drop j)).length
         = s.length + (j - i) + (p.length - j) := by
@@ -317,61 +316,78 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have hdv₂w' : G.radius.toNat ≤ G.dist (p.getVert 2) w := by
     rw [hv₂]
     exact hdv₂w
+  haveI : Nonempty α := hconn.nonempty
+  have hmle : q.length + 1 ≤ G.radius.toNat := by rw [← hq]; exact hdvw
+  have hrle : G.radius.toNat ≤ p.length := (hp.trans hdva).symm.le
   refine ⟨v₀, v₂, w, p, q, hp.trans hdva, ?_, ?_, hv₂,
     (hp.trans hdva).le.trans hdv₂w, ?_, ?_, ?_, ?_⟩
   · exact by rw [hq, hp, hdva]; exact hdvw
-  · exact le_trans hr2 (hp.trans hdva).symm.le
+  · exact le_trans hr2 hrle
   · -- (7a): no q_i - v_j chord for j >= 2
     intro i j him hjr h2j hadj
-    have hedge := hed1 (p.getVert j) (q.getVert i) hadj.symm
-    have hip : G.dist v₀ (q.getVert i) = i :=
-      dist_getVert_of_length_eq_dist hq i him
-    have hpj : G.dist v₀ (p.getVert j) = j :=
-      dist_getVert_of_length_eq_dist hp j hjr
+    have hchain : G.radius.toNat ≤ (j - 2) + 1 + (q.length - i) := by
+      calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
+        _ ≤ G.dist (p.getVert 2) (p.getVert j) + G.dist (p.getVert j) w :=
+            hconn.dist_triangle (u := p.getVert 2) (v := p.getVert j)
+              (w := w)
+        _ = (j - 2) + G.dist (p.getVert j) w := by
+            rw [dist_getVert_pair_le hp 2 j (by omega) hjr]
+        _ ≤ (j - 2) + (G.dist (p.getVert j) (q.getVert i)
+              + G.dist (q.getVert i) w) := by
+            exact add_le_add le_rfl
+              (hconn.dist_triangle (u := p.getVert j) (v := q.getVert i)
+                (w := w))
+        _ ≤ (j - 2) + (1 + (q.length - i)) := by
+            refine add_le_add le_rfl ?_
+            exact add_le_add (hed1 (p.getVert j) (q.getVert i) hadj.symm)
+              (dist_getVert_end_of_length_eq_dist hq i him).le
     have hji : j ≤ i + 1 := by
-      have ht := hconn.dist_triangle (u := v₀) (v := q.getVert i)
-        (w := p.getVert j)
-      rw [hip, hpj] at ht
-      omega
-    have hpair := dist_getVert_pair_le hp 2 j (by omega) hjr
-    have hqw : G.dist (q.getVert i) w = q.length - i :=
-      dist_getVert_end_of_length_eq_dist hq i him
-    have hd : G.dist (p.getVert 2) w ≤ (j - 2) + 1 + (q.length - i) := by
-      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert j)
-        (w := w)
-      have ht2 := hconn.dist_triangle (u := p.getVert j) (v := q.getVert i)
-        (w := w)
-      rw [hqw] at ht2
-      rw [hpair] at ht1
-      omega
+      calc j = G.dist v₀ (p.getVert j) :=
+            (dist_getVert_of_length_eq_dist hp j hjr).symm
+        _ ≤ G.dist v₀ (q.getVert i) + G.dist (q.getVert i) (p.getVert j) :=
+            hconn.dist_triangle (u := v₀) (v := q.getVert i)
+              (w := p.getVert j)
+        _ = i + G.dist (q.getVert i) (p.getVert j) := by
+            rw [dist_getVert_of_length_eq_dist hq i him]
+        _ ≤ i + 1 :=
+            Nat.add_le_add_left
+              (hed1 (q.getVert i) (p.getVert j) hadj) i
     omega
   · -- (7b): no v1 - p_i chord for i >= 2
     intro i h2i him hadj
-    have hedge := hed1 (p.getVert 1) (q.getVert i) hadj
-    have hqw : G.dist (q.getVert i) w = q.length - i :=
-      dist_getVert_end_of_length_eq_dist hq i him
-    have hd : G.dist (p.getVert 2) w ≤ 1 + 1 + (q.length - i) := by
-      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
-        (w := w)
-      have ht2 := hconn.dist_triangle (u := p.getVert 1) (v := q.getVert i)
-        (w := w)
-      rw [hqw] at ht2
-      rw [h12] at ht1
-      omega
+    have hchain : G.radius.toNat ≤ 1 + 1 + (q.length - i) := by
+      calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
+        _ ≤ G.dist (p.getVert 2) (p.getVert 1) + G.dist (p.getVert 1) w :=
+            hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+              (w := w)
+        _ = 1 + G.dist (p.getVert 1) w := by rw [h12]
+        _ ≤ 1 + (G.dist (p.getVert 1) (q.getVert i)
+              + G.dist (q.getVert i) w) := by
+            exact add_le_add le_rfl
+              (hconn.dist_triangle (u := p.getVert 1) (v := q.getVert i)
+                (w := w))
+        _ ≤ 1 + (1 + (q.length - i)) := by
+            refine add_le_add le_rfl ?_
+            exact add_le_add (hed1 (p.getVert 1) (q.getVert i) hadj)
+              (dist_getVert_end_of_length_eq_dist hq i him).le
     omega
   · -- (7c): the chord v1 - p1 forces m = r - 1
     intro hadj
-    have hedge := hed1 (p.getVert 1) (q.getVert 1) hadj
-    have hq1 : G.dist (q.getVert 1) w = q.length - 1 :=
-      dist_getVert_end_of_length_eq_dist hq 1 (by omega)
-    have hd : G.dist (p.getVert 2) w ≤ 1 + 1 + (q.length - 1) := by
-      have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
-        (w := w)
-      have ht2 := hconn.dist_triangle (u := p.getVert 1) (v := q.getVert 1)
-        (w := w)
-      rw [hq1] at ht2
-      rw [h12] at ht1
-      omega
+    have hchain : G.radius.toNat ≤ 1 + 1 + (q.length - 1) := by
+      calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
+        _ ≤ G.dist (p.getVert 2) (p.getVert 1) + G.dist (p.getVert 1) w :=
+            hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+              (w := w)
+        _ = 1 + G.dist (p.getVert 1) w := by rw [h12]
+        _ ≤ 1 + (G.dist (p.getVert 1) (q.getVert 1)
+              + G.dist (q.getVert 1) w) := by
+            exact add_le_add le_rfl
+              (hconn.dist_triangle (u := p.getVert 1) (v := q.getVert 1)
+                (w := w))
+        _ ≤ 1 + (1 + (q.length - 1)) := by
+            refine add_le_add le_rfl ?_
+            exact add_le_add (hed1 (p.getVert 1) (q.getVert 1) hadj)
+              (dist_getVert_end_of_length_eq_dist hq 1 (by omega)).le
     omega
   · -- supports overlap only at v0
     intro i j h1i hir h1j hjm heq
@@ -385,25 +401,27 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rcases Nat.eq_or_lt_of_le h1i with h1 | h2i
     · -- i = 1
       subst h1
-      have hq1 : G.dist (q.getVert 1) w = q.length - 1 :=
-        dist_getVert_end_of_length_eq_dist hq 1 (by omega)
-      have hd : G.dist (p.getVert 2) w ≤ 1 + (q.length - 1) := by
-        have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
-          (w := w)
-        rw [h12] at ht1
-        rw [heq] at ht1
-        omega
+      have hchain : G.radius.toNat ≤ 1 + (q.length - 1) := by
+        calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
+          _ ≤ G.dist (p.getVert 2) (p.getVert 1) + G.dist (p.getVert 1) w :=
+              hconn.dist_triangle (u := p.getVert 2) (v := p.getVert 1)
+                (w := w)
+          _ = 1 + G.dist (p.getVert 1) w := by rw [h12]
+          _ = 1 + G.dist (q.getVert 1) w := by rw [heq]
+          _ = 1 + (q.length - 1) :=
+              (dist_getVert_end_of_length_eq_dist hq 1 (by omega))
       omega
     · -- i >= 2
-      have hpair := dist_getVert_pair_le hp 2 i (by omega) hir
-      have hqw : G.dist (q.getVert i) w = q.length - i :=
-        dist_getVert_end_of_length_eq_dist hq i hjm
-      have hd : G.dist (p.getVert 2) w ≤ (i - 2) + (q.length - i) := by
-        have ht1 := hconn.dist_triangle (u := p.getVert 2) (v := p.getVert i)
-          (w := w)
-        rw [hpair] at ht1
-        rw [heq] at ht1
-        omega
+      have hchain : G.radius.toNat ≤ (i - 2) + (q.length - i) := by
+        calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
+          _ ≤ G.dist (p.getVert 2) (p.getVert i) + G.dist (p.getVert i) w :=
+              hconn.dist_triangle (u := p.getVert 2) (v := p.getVert i)
+                (w := w)
+          _ = (i - 2) + G.dist (p.getVert i) w := by
+              rw [dist_getVert_pair_le hp 2 i (by omega) hir]
+          _ = (i - 2) + G.dist (q.getVert i) w := by rw [heq]
+          _ = (i - 2) + (q.length - i) :=
+              (dist_getVert_end_of_length_eq_dist hq i hjm)
       omega
 
 end Graffiti84
