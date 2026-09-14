@@ -38,12 +38,12 @@ theorem dist_getVert_of_length_eq_dist {G : SimpleGraph α}
       SimpleGraph.Walk.drop_length p i
     have hsplit_len : (q.append (p.drop i)).length
         = q.length + (p.length - i) := by
-      rw [SimpleGraph.Walk.length_append]
+      rw [SimpleGraph.Walk.length_append, hdroplen]
     have hshort : (q.append (p.drop i)).length < p.length := by
       rw [hsplit_len, hq]
       omega
     have hd := SimpleGraph.dist_le (q.append (p.drop i))
-    rw [hp] at hd
+    rw [← hp] at hd
     omega
 
 /-- On a geodesic walk, every suffix position realizes the distance:
@@ -73,7 +73,7 @@ theorem dist_getVert_end_of_length_eq_dist {G : SimpleGraph α}
       rw [hsplit_len, hq]
       omega
     have hd := SimpleGraph.dist_le ((p.take i).append q)
-    rw [hp] at hd
+    rw [← hp] at hd
     omega
 
 /-- Vertices at distinct positions of a geodesic are distinct. -/
