@@ -193,7 +193,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have hdva : G.dist v₀ a = G.radius.toNat := by
     have hc : ((G.dist v₀ a : ℕ) : ℕ∞) = G.edist v₀ a :=
       (hconn.preconnected v₀ a).coe_dist_eq_edist
-    rw [hedva, hrc] at hc
+    rw [hedva, ← hrc] at hc
     exact ENat.coe_inj.mp hc
   obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist v₀ a
   have hplen : p.length = G.radius.toNat := by rw [hp, hdva]
@@ -221,10 +221,9 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hle3 : G.edist v₀ w ≤ ρ := hedρ w
       (Finset.mem_erase.mpr ⟨hwne, Finset.mem_univ w⟩)
     have hpt : ρ.toNat + 1 = G.radius.toNat := by
-      have hcast : ((ρ.toNat + 1 : ℕ) : ℕ∞) = ρ + 1 := by
-        rw [Nat.cast_add, Nat.cast_one, ← hρc]
-      rw [← hcast, hradius, hrc] at ⊢
-      exact ENat.coe_inj.mp rfl
+      have hfull : ((ρ.toNat + 1 : ℕ) : ℕ∞) = ((G.radius.toNat : ℕ) : ℕ∞) := by
+        rw [Nat.cast_add, Nat.cast_one, ← hρc, ← hradius, hrc]
+      exact ENat.coe_inj.mp hfull
     have hcoele : (G.dist v₀ w : ℕ∞) ≤ (ρ.toNat : ℕ∞) := by
       rw [hc3, hρc]
       exact hle3
