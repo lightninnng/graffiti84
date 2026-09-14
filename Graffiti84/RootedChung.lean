@@ -212,7 +212,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       rw [← hc2, ← hrc]
       exact ENat.coe_lt_coe.mpr (by omega)
     have hge : G.radius ≤ G.edist v₂ a := by
-      refine le_trans SimpleGraph.radius_le_eccent ?_
+      refine le_trans (SimpleGraph.radius_le_eccent (u := v₂)) ?_
       rw [hw]
     exact absurd hge (not_le.mpr hlt)
   have hdvw : G.dist v₀ w + 1 ≤ G.radius.toNat := by
@@ -221,9 +221,12 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hle3 : G.edist v₀ w ≤ ρ := hedρ w
       (Finset.mem_erase.mpr ⟨hwne, Finset.mem_univ w⟩)
     have hpt : ρ.toNat + 1 = G.radius.toNat := by
-      have hfull : ((ρ.toNat + 1 : ℕ) : ℕ∞) = ((G.radius.toNat : ℕ) : ℕ∞) := by
-        rw [Nat.cast_add, Nat.cast_one, ← hρc, ← hradius, hrc]
-      exact ENat.coe_inj.mp hfull
+      apply ENat.coe_inj.mp
+      calc ((ρ.toNat + 1 : ℕ) : ℕ∞) = (ρ.toNat : ℕ∞) + 1 := by
+            rw [Nat.cast_add, Nat.cast_one]
+        _ = ρ + 1 := by rw [hρc]
+        _ = G.radius := hradius
+        _ = ((G.radius.toNat : ℕ) : ℕ∞) := hrc
     have hcoele : (G.dist v₀ w : ℕ∞) ≤ (ρ.toNat : ℕ∞) := by
       rw [hc3, hρc]
       exact hle3
@@ -233,7 +236,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have hc4 : ((G.dist v₂ w : ℕ) : ℕ∞) = G.edist v₂ w :=
       (hconn.preconnected v₂ w).coe_dist_eq_edist
     have hge : G.radius ≤ G.edist v₂ w := by
-      refine le_trans SimpleGraph.radius_le_eccent ?_
+      refine le_trans (SimpleGraph.radius_le_eccent (u := v₂)) ?_
       rw [hw]
     rw [← hrc] at hge
     rw [← hc4] at hge
