@@ -290,7 +290,8 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       (∀ i j, i ≤ q.length → j ≤ p.length → 2 ≤ j →
         ¬ G.Adj (q.getVert i) (p.getVert j)) ∧
       (∀ i, 2 ≤ i → i ≤ q.length → ¬ G.Adj (p.getVert 1) (q.getVert i)) ∧
-      (G.Adj (p.getVert 1) (q.getVert 1) → q.length + 1 = p.length) ∧
+      (1 ≤ q.length → G.Adj (p.getVert 1) (q.getVert 1) →
+        q.length + 1 = p.length) ∧
       (∀ i j, 1 ≤ i → i ≤ p.length → 1 ≤ j → j ≤ q.length →
         p.getVert i = q.getVert j → False) := by
   obtain ⟨v₀, v₂, w, p, q, hp, hdva, hv₂, hdv₂a, hq, hdvw, hdv₂w⟩ :=
@@ -358,8 +359,9 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
             have h2 := dist_getVert_end_of_length_eq_dist hq i him
             omega
     omega
-  · -- (7c): the chord v1 - p1 forces m = r - 1
-    intro hadj
+  · -- (7c): the chord v1 - p1 forces m = r - 1 (m >= 1 assumed: for
+    -- m = 0 the vertex q.getVert 1 is junk and the "chord" is vacuous)
+    intro h1m hadj
     have hchain : G.radius.toNat ≤ 1 + (1 + (q.length - 1)) := by
       calc G.radius.toNat ≤ G.dist (p.getVert 2) w := hdv₂w'
         _ ≤ G.dist (p.getVert 2) (p.getVert 1) + G.dist (p.getVert 1) w :=
