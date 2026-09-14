@@ -455,16 +455,21 @@ theorem isInducedTree_of_walk_chords {G : SimpleGraph α} {x z : α}
 
 
 private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
-    ∀ (l : List β) (x : β), x ∈ l →
+    ∀ (l : List β), l.Nodup → ∀ (x : β), x ∈ l →
       List.idxOf x l.reverse + List.idxOf x l = l.length - 1 := by
   intro l
   induction l with
-  | nil => intro x hx; simp at hx
+  | nil => intro _ x hx; simp at hx
   | cons h r ih =>
-      intro x hx
+      intro hnd x hx
+      obtain ⟨hnhr, hnr⟩ := List.nodup_cons.mp hnd
       by_cases hxe : x = h
       · subst hxe
-        simp [List.idxOf_cons_eq]
+        rw [List.reverse_cons,
+          List.idxOf_append_of_notMem (fun hc => hnhr (by
+            simpa using hc)),
+          List.idxOf_cons_self, List.idxOf_cons_self,
+          List.length_reverse, List.length_cons]
         omega
       · have hxr : x ∈ r := by
           by_contra hc
@@ -472,13 +477,12 @@ private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
           rcases hx with h1 | h2
           · exact hxe h1
           · exact hc h2
-        have hrec := ih x hxr
-        rw [List.reverse_cons, List.idxOf_append_of_notMem (by
-          intro hc
-          simp only [List.mem_singleton] at hc
-          exact hxe hc),
-          List.idxOf_cons_eq hxe r h]
-        simp only [List.length_reverse, List.length_cons]
+        have hrec := ih hnr x hxr
+        rw [List.reverse_cons,
+          List.idxOf_append_of_notMem (fun hc => hxe (by
+            simpa using hc)),
+          List.idxOf_cons_ne r (fun e => hxe e.symm),
+          List.length_reverse, List.length_cons]
         omega
 
 end Graffiti84
