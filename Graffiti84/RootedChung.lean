@@ -225,8 +225,8 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       calc ((ρ.toNat + 1 : ℕ) : ℕ∞) = (ρ.toNat : ℕ∞) + 1 := by
             rw [Nat.cast_add, Nat.cast_one]
         _ = ρ + 1 := by rw [hρc]
-        _ = G.radius := hradius
-        _ = ((G.radius.toNat : ℕ) : ℕ∞) := hrc
+        _ = G.radius := hradius.symm
+        _ = ((G.radius.toNat : ℕ) : ℕ∞) := hrc.symm
     have hcoele : (G.dist v₀ w : ℕ∞) ≤ (ρ.toNat : ℕ∞) := by
       rw [hc3, hρc]
       exact hle3
