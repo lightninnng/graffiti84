@@ -285,7 +285,8 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     (hr2 : 2 ≤ G.radius.toNat)
     (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius) :
     ∃ (v₀ v₂ w : α) (p : G.Walk v₀ a) (q : G.Walk v₀ w),
-      p.length = G.radius.toNat ∧ q.length + 1 ≤ p.length ∧ 2 ≤ p.length ∧
+      p.length = G.radius.toNat ∧ G.dist v₀ a = G.radius.toNat ∧
+      q.length + 1 ≤ p.length ∧ 2 ≤ p.length ∧
       p.getVert 2 = v₂ ∧ p.length ≤ G.dist v₂ w ∧
       (∀ i j, i ≤ q.length → j ≤ p.length → 2 ≤ j →
         ¬ G.Adj (q.getVert i) (p.getVert j)) ∧
@@ -308,7 +309,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   haveI : Nonempty α := hconn.nonempty
   have hmle : q.length + 1 ≤ G.radius.toNat := by rw [hq]; exact hdvw
   have hrle : G.radius.toNat ≤ p.length := (hp.trans hdva).symm.le
-  refine ⟨v₀, v₂, w, p, q, hp.trans hdva, ?_, ?_, hv₂,
+  refine ⟨v₀, v₂, w, p, q, hp.trans hdva, hdva, ?_, ?_, hv₂,
     (hp.trans hdva).le.trans hdv₂w, ?_, ?_, ?_, ?_⟩
   · exact by rw [hq, hp, hdva]; exact hdvw
   · exact le_trans hr2 hrle
@@ -437,6 +438,7 @@ theorem isInducedTree_of_walk_chords {G : SimpleGraph α} {x z : α}
     · rw [SimpleGraph.Walk.support_reverse, List.mem_reverse] at h
       exact (SimpleGraph.Walk.support_dropUntil_suffix_support Q hb').subset h
   · -- acyclic via the index potential
+    haveI : Inhabited α := ⟨x⟩
     refine acyclicWithin_of_phi (fun z => (Q.support.idxOf z : ℤ)) ?_ ?_
     · intro u hu v hv heq
       have hu' : u ∈ Q.support := List.mem_toFinset.mp hu
@@ -456,25 +458,24 @@ trivial, `r = 2` and the first geodesic alone is an induced tree of order
 `r + 1 = 2r - 1` containing `a`. -/
 theorem rooted_chung_m_zero {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     (hr2 : 2 ≤ G.radius.toNat)
-    (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius) :
+    (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius)
+    (hm0 : q0.length = 0) :
     ∃ S : Finset α, IsInducedTree G S ∧ a ∈ S ∧
       2 * G.radius.toNat - 1 ≤ S.card := by
-  obtain ⟨v₀, v₂, w, p, q, hplen, hmle, h2len, hv₂, hdv₂w, h7a, h7b, h7c,
-    hover⟩ := chung_chords hconn hr2 hdrop
-  -- q.length = 0 forces r <= 2
-  have hq0 : q.length = 0 := by omega
+  obtain ⟨v₀, v₂, w, p, q, hplen, hdva, hmle, h2len, hv₂, hdv₂w, h7a, h7b,
+    h7c, hover⟩ := chung_chords hconn hr2 hdrop
+  have hq0 : q.length = 0 := hm0
   have hweq : w = v₀ := by
-    have hnil : q = SimpleGraph.Walk.nil := by
-      cases q with
-      | nil => rfl
-      | cons h' _ => omega
-    have : q.length = 0 → w = v₀ := by
-      intro _
-      rw [hnil]
-      rfl
-    exact this hq0
+    cases q with
+    | nil => rfl
+    | cons h' _ =>
+        exact absurd hq0 (by
+          intro h
+          rw [SimpleGraph.Walk.length_cons] at h
+          omega)
+  have hpd : p.length = G.dist v₀ a := hplen.trans hdva.symm
   have hd2 : G.dist v₀ (p.getVert 2) = 2 :=
-    dist_getVert_of_length_eq_dist hplen 2 (by omega)
+    dist_getVert_of_length_eq_dist hpd 2 (by omega)
   rw [← hv₂] at hdv₂w
   rw [hweq, SimpleGraph.dist_comm (G := G) (v := v₀) (u := p.getVert 2),
     hd2] at hdv₂w
@@ -482,10 +483,10 @@ theorem rooted_chung_m_zero {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   refine ⟨p.support.toFinset, ?_, ?_, ?_⟩
   · refine isInducedTree_of_walk_chords p ?_
     intro u v hu hv hadj
-    exact geodesic_adj_support_succ hconn hplen hu hv hadj
+    exact geodesic_adj_support_succ hconn hpd hu hv hadj
   · rw [List.mem_toFinset]
     exact p.end_mem_support
-  · have hpath := isPath_of_length_eq_dist hconn hplen
+  · have hpath := isPath_of_length_eq_dist hconn hpd
     rw [List.toFinset_card_of_nodup hpath.support_nodup,
       SimpleGraph.Walk.length_support]
     omega
