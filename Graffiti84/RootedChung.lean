@@ -300,7 +300,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     simpa [SimpleGraph.Adj.toWalk] using h'
   have h12 : G.dist (p.getVert 2) (p.getVert 1) = 1 := by
     rw [SimpleGraph.dist_comm]
-    exact dist_getVert_pair_le hp 1 2 (by omega) (by omega)
+    exact dist_getVert_pair_le hconn hp 1 2 (by omega) (by omega)
   have hdv₂w' : G.radius.toNat ≤ G.dist (p.getVert 2) w := by
     rw [hv₂]
     exact hdv₂w
