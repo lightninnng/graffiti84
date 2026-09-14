@@ -70,8 +70,9 @@ noncomputable def minDegree (G : SimpleGraph α) [Nonempty α] : ℕ :=
   Finset.univ.inf' Finset.univ_nonempty fun v => G.degree v
 
 lemma degree_ge_minDegree {G : SimpleGraph α} [Nonempty α] {v : α} :
-    minDegree G ≤ G.degree v :=
-  Finset.inf'_le v (Finset.mem_univ v)
+    minDegree G ≤ G.degree v := by
+  simp only [minDegree]
+  exact Finset.inf'_le v (Finset.mem_univ v)
 
 /-- **Conjecture 84, minimum-degree-at-least-two branch (graph level).**
 A connected graph with `δ ≥ 2` satisfies `2r ≤ t·δ`. -/
@@ -80,23 +81,29 @@ theorem two_radius_le_treeNumber_mul_minDegree {G : SimpleGraph α} [Nonempty α
     2 * G.radius.toNat ≤ treeNumber G * minDegree G := by
   have h1 : G.radius.toNat + 1 ≤ treeNumber G :=
     radius_add_one_le_treeNumber hconn
-  have hdeg : ∀ v : α, 2 ≤ G.degree v := by
-    intro v
-    exact le_trans hδ (Finset.inf'_le v (Finset.mem_univ v))
+  have hdeg : ∀ v : α, 2 ≤ G.degree v := fun v =>
+    le_trans hδ (degree_ge_minDegree)
   haveI : Nontrivial α := by
     by_contra hnt
     obtain ⟨v⟩ := ‹Nonempty α›
+    have hv2 : 2 ≤ G.degree v := hdeg v
     have hpos : 0 < G.degree v := by omega
-    obtain ⟨x, hx⟩ := SimpleGraph.degree_pos_iff_exists_adj v |>.mp hpos
+    obtain ⟨x, hx⟩ :=
+      (SimpleGraph.degree_pos_iff_exists_adj (G := G) v).mp hpos
     exact hnt ⟨v, x, G.ne_of_adj hx⟩
-  have hrad1 : (1 : ℕ∞) ≤ G.radius :=
-    (le_iInf_iff).mpr fun u => Order.one_le_iff_pos.mpr
-      (SimpleGraph.eccent_pos_iff u |>.mp inferInstance)
+  have hrad1 : (1 : ℕ∞) ≤ G.radius := by
+    refine (le_iInf_iff).mpr fun u => ?_
+    have hu : 0 < G.eccent u := SimpleGraph.eccent_pos_iff u |>.mp inferInstance
+    exact Order.one_le_iff_pos.mpr hu
   have hne0 : G.radius ≠ 0 := by
     intro h
     rw [h] at hrad1
     exact absurd hrad1 (by simp)
-  have hpos : 0 < G.radius.toNat := ENat.toNat_pos hne0
+  have hrtop : G.radius ≠ ⊤ := by
+    obtain ⟨c, y, hcy⟩ := G.exists_edist_eq_radius_of_finite
+    rw [← hcy]
+    exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c y)
+  have hpos : 0 < G.radius.toNat := ENat.toNat_pos hne0 hrtop
   have hr : 1 ≤ G.radius.toNat := by omega
   exact final_arithmetic G.radius.toNat (minDegree G) (treeNumber G) hr
     (by omega) (fun h0 => absurd h0 (by omega)) (fun _ => h1)
