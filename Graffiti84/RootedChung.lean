@@ -450,45 +450,7 @@ theorem isInducedTree_of_walk_chords {G : SimpleGraph α} {x z : α}
       have hu' : u ∈ Q.support := List.mem_toFinset.mp hu
       have hv' : v ∈ Q.support := List.mem_toFinset.mp hv
       rcases hchord u v hu' hv' hadj with h | h
-      · rw [h]; norm_num
-      · rw [h]; norm_num
-
-/-- **Rooted Chung lemma (m = 0 case).** When the second geodesic is
-trivial, `r = 2` and the first geodesic alone is an induced tree of order
-`r + 1 = 2r - 1` containing `a`. -/
-theorem rooted_chung_m_zero {G : SimpleGraph α} (hconn : G.Connected) {a : α}
-    (hr2 : 2 ≤ G.radius.toNat)
-    (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius)
-    (hm0 : q0.length = 0) :
-    ∃ S : Finset α, IsInducedTree G S ∧ a ∈ S ∧
-      2 * G.radius.toNat - 1 ≤ S.card := by
-  obtain ⟨v₀, v₂, w, p, q, hplen, hdva, hmle, h2len, hv₂, hdv₂w, h7a, h7b,
-    h7c, hover⟩ := chung_chords hconn hr2 hdrop
-  have hq0 : q.length = 0 := hm0
-  have hweq : w = v₀ := by
-    cases q with
-    | nil => rfl
-    | cons h' _ =>
-        exact absurd hq0 (by
-          intro h
-          rw [SimpleGraph.Walk.length_cons] at h
-          omega)
-  have hpd : p.length = G.dist v₀ a := hplen.trans hdva.symm
-  have hd2 : G.dist v₀ (p.getVert 2) = 2 :=
-    dist_getVert_of_length_eq_dist hpd 2 (by omega)
-  rw [← hv₂] at hdv₂w
-  rw [hweq, SimpleGraph.dist_comm (G := G) (v := v₀) (u := p.getVert 2),
-    hd2] at hdv₂w
-  -- hdv2w : p.length <= 2;with 2 <= p.length we get r = 2
-  refine ⟨p.support.toFinset, ?_, ?_, ?_⟩
-  · refine isInducedTree_of_walk_chords p ?_
-    intro u v hu hv hadj
-    exact geodesic_adj_support_succ hconn hpd hu hv hadj
-  · rw [List.mem_toFinset]
-    exact p.end_mem_support
-  · have hpath := isPath_of_length_eq_dist hconn hpd
-    rw [List.toFinset_card_of_nodup hpath.support_nodup,
-      SimpleGraph.Walk.length_support]
-    omega
+      · right; omega
+      · left; omega
 
 end Graffiti84
