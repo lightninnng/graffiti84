@@ -15,6 +15,12 @@ layers.  The pure arithmetic closure below is complete.
 
 namespace Graffiti84
 
+open Classical
+
+universe u
+
+variable {α : Type u} [Fintype α] [DecidableEq α]
+
 /--
 Pure arithmetic closure of Graffiti.pc #84.
 
