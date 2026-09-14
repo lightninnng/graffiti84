@@ -1109,4 +1109,15 @@ theorem treeNumber_ge_dist_add_one {G : SimpleGraph α} (hconn : G.Connected)
   calc G.dist u v + 1 = S.card := hcard.symm
     _ ≤ treeNumber G := Finset.le_sup hmem
 
+
+/-- **F2 (radius form).** In a nonempty connected graph, `t(G) >= r(G) + 1`. -/
+theorem radius_add_one_le_treeNumber {G : SimpleGraph α} [Nonempty α]
+    (hconn : G.Connected) :
+    G.radius.toNat + 1 ≤ treeNumber G := by
+  obtain ⟨c, y, hcy⟩ := G.exists_edist_eq_radius_of_finite
+  have hd : G.dist c y = (G.edist c y).toNat := rfl
+  rw [hcy] at hd
+  calc G.radius.toNat + 1 = G.dist c y + 1 := by rw [hd]
+    _ ≤ treeNumber G := treeNumber_ge_dist_add_one hconn c y
+
 end Graffiti84

@@ -58,4 +58,39 @@ The exact `minDegree` definition should be fixed only after checking the
 Mathlib/FormalConjectures API used in the user's local environment.
 -/
 
+
+/-- The minimum degree of `G`. -/
+noncomputable def minDegree (G : SimpleGraph α) : ℕ :=
+  Finset.univ.inf fun v => G.degree v
+
+lemma degree_ge_minDegree {G : SimpleGraph α} {v : α} :
+    minDegree G ≤ G.degree v :=
+  Finset.le_inf (fun w _ => le_rfl) |>.trans (Finset.inf_le (Finset.mem_univ v))
+
+/-- **Conjecture 84, minimum-degree-at-least-two branch (graph level).**
+A connected graph with `δ ≥ 2` satisfies `2r ≤ t·δ`. -/
+theorem two_radius_le_treeNumber_mul_minDegree {G : SimpleGraph α} [Nonempty α]
+    (hconn : G.Connected) (hδ : 2 ≤ minDegree G) :
+    2 * G.radius.toNat ≤ treeNumber G * minDegree G := by
+  have h1 : G.radius.toNat + 1 ≤ treeNumber G :=
+    radius_add_one_le_treeNumber hconn
+  have hdeg : ∀ v : α, 2 ≤ G.degree v := by
+    intro v
+    exact le_trans hδ (Finset.inf_le (Finset.mem_univ v))
+  haveI : Nontrivial α := by
+    by_contra hnt
+    obtain ⟨v⟩ := ‹Nonempty α›
+    obtain ⟨x, hx⟩ := SimpleGraph.degree_pos_iff_exists_adj.mp (by omega)
+    exact hnt ⟨v, x, G.ne_of_adj hx⟩
+  have hrad1 : (1 : ℕ∞) ≤ G.radius :=
+    (le_iInf_iff).mpr fun u => SimpleGraph.eccent_pos_iff u |>.mp inferInstance
+  have hne0 : G.radius ≠ 0 := by
+    intro h
+    rw [h] at hrad1
+    exact absurd hrad1 (by simp)
+  have hr : 1 ≤ G.radius.toNat :=
+    Nat.succ_le_of_pos (ENat.toNat_pos hne0)
+  exact final_arithmetic G.radius.toNat (minDegree G) (treeNumber G) hr hδ
+    (fun _ => absurd h1 (by omega)) (fun _ h2 => by omega)
+
 end Graffiti84
