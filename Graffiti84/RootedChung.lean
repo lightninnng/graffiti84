@@ -139,6 +139,11 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     | nil => exact absurd rfl hy
     | cons h _ => exact ⟨_, h⟩
   have hnbne : nb ≠ a := (G.ne_of_adj hnb).symm
+  have hnbedge : G.edist nb a ≤ 1 := by
+    have hw1 : G.Walk nb a := SimpleGraph.Adj.toWalk hnb.symm
+    have hh := SimpleGraph.edist_le hw1
+    simp only [SimpleGraph.Adj.toWalk] at hh
+    exact hh
   have hnbρ : G.edist v₀ nb ≤ ρ := hedρ nb
     (Finset.mem_erase.mpr ⟨hnbne, Finset.mem_univ nb⟩)
   have hrne : G.radius ≠ ⊤ := by
@@ -155,40 +160,39 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   -- radius = rho + 1
   have hradius : G.radius = ρ + 1 := by
     refine le_antisymm ?_ hdrop
-    refine le_trans SimpleGraph.radius_le_eccent ?_
-    refine SimpleGraph.eccent_le_iff v₀ ρ ?_
+    refine le_trans (SimpleGraph.radius_le_eccent (u := v₀)) ?_
+    refine (SimpleGraph.eccent_le_iff v₀ ρ).mpr ?_
     intro y
     by_cases hy : y = a
     · rw [hy]
       calc G.edist v₀ a ≤ G.edist v₀ nb + G.edist nb a :=
             SimpleGraph.edist_triangle
-        _ ≤ ρ + 1 := by
-            refine add_le_add hnbρ ?_
-            exact Order.one_le_iff_pos.mpr
-              (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hnb).symm)
+        _ ≤ ρ + 1 := add_le_add hnbρ hnbedge
     · exact hedρ y (Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩)
   -- d(v0, a) = radius
   have hedva : G.edist v₀ a = G.radius := by
     refine le_antisymm ?_ ?_
     · calc G.edist v₀ a ≤ G.edist v₀ nb + G.edist nb a :=
             SimpleGraph.edist_triangle
-      _ ≤ ρ + 1 := by
-          refine add_le_add hnbρ ?_
-          exact Order.one_le_iff_pos.mpr
-            (SimpleGraph.edist_pos_of_ne (G.ne_of_adj hnb).symm)
+      _ ≤ ρ + 1 := add_le_add hnbρ hnbedge
       _ = G.radius := hradius.symm
     · by_contra hcon
       push_neg at hcon
       have heccρ : G.eccent v₀ ≤ ρ := by
-        refine SimpleGraph.eccent_le_iff v₀ ρ ?_
+        refine (SimpleGraph.eccent_le_iff v₀ ρ).mpr ?_
         intro y
         by_cases hy : y = a
         · rw [hy]; exact hcon
         · exact hedρ y (Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩)
       have hle : G.radius ≤ ρ :=
-        le_trans SimpleGraph.radius_le_eccent heccρ
+        le_trans (SimpleGraph.radius_le_eccent (u := v₀)) heccρ
       rw [hradius] at hle
-      exact absurd (lt_of_lt_of_le (lt_add_one ρ) hle) (lt_irrefl ρ)
+      have hlt : ρ < ρ + 1 := by
+        have hcast : ((ρ.toNat + 1 : ℕ) : ℕ∞) = ρ + 1 := by
+          rw [hρc, Nat.cast_add, Nat.cast_one]
+        rw [hcast]
+        exact ENat.coe_lt_coe.mpr (Nat.lt_succ_self ρ.toNat)
+      exact absurd (lt_of_lt_of_le hlt hle) (lt_irrefl ρ)
   have hdva : G.dist v₀ a = G.radius.toNat := by
     have hc : ((G.dist v₀ a : ℕ) : ℕ∞) = G.edist v₀ a :=
       (hconn.preconnected v₀ a).coe_dist_eq_edist
@@ -202,7 +206,6 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   obtain ⟨w, hw⟩ := G.exists_edist_eq_eccent_of_finite v₂
   have hdv₂a : G.dist v₂ a + 2 = G.radius.toNat := by
     have hpre := dist_getVert_end_of_length_eq_dist hp 2 (by omega)
-    simp only [hv₂def] at hpre
     omega
   have hwne : w ≠ a := by
     intro h
@@ -211,8 +214,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       (hconn.preconnected v₂ a).coe_dist_eq_edist
     have hlt : G.edist v₂ a < G.radius := by
       rw [← hc2, ← hrc]
-      refine ENat.coe_lt_coe.mp ?_
-      omega
+      exact ENat.coe_lt_coe.mpr (by omega)
     have hge : G.radius ≤ G.edist v₂ a := by
       refine le_trans SimpleGraph.radius_le_eccent ?_
       rw [hw]
