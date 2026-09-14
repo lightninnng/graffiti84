@@ -189,9 +189,7 @@ theorem chung_context {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       have hle : G.radius ≤ ρ :=
         le_trans (SimpleGraph.radius_le_eccent (u := v₀)) heccρ
       rw [hradius] at hle
-      have hlt : ρ < ρ + 1 :=
-        (ENat.lt_add_one_iff hρtop).mp (le_rfl : ρ ≤ ρ)
-      exact absurd (lt_of_lt_of_le hlt hle) (lt_irrefl ρ)
+      exact absurd ((ENat.add_one_le_iff hρtop).mp hle) (lt_irrefl ρ)
   have hdva : G.dist v₀ a = G.radius.toNat := by
     have hc : ((G.dist v₀ a : ℕ) : ℕ∞) = G.edist v₀ a :=
       (hconn.preconnected v₀ a).coe_dist_eq_edist
