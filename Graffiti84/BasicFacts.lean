@@ -1009,6 +1009,7 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
           omega
         refine ⟨1, Φ.length - 2, by omega, hv1, hvm2, by omega, ?_⟩
         intro hpair
+        rw [Prod.mk.injEq] at hpair
         have : (1 : ℕ) = 0 := hpair.1
         omega
       · have hi1pos : 0 < i1 := Nat.pos_of_ne_zero hcase
@@ -1016,10 +1017,10 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
         · exact hneighb (i1 - 1) (by omega) (Or.inr (by omega))
         · exact hneighb (i1 + 1) (by omega) (Or.inl rfl)
         · intro hpair
-          rcases hpair.1 with hm0 | hm0
-          · have hlen2 : w.length = 2 := by omega
-            exact absurd hlen2 hk2
-          · exact absurd hm0 (by omega)
+          rw [Prod.mk.injEq] at hpair
+          obtain ⟨hm0, hn0⟩ := hpair
+          have hlen2 : w.length = 2 := by omega
+          exact absurd hlen2 hk2
     have hpointeq : w.getVert m = w.getVert n := by
       have hmS : w.getVert m ∈ S := hwsub _ (w.getVert_mem_support _)
       have hnS : w.getVert n ∈ S := hwsub _ (w.getVert_mem_support _)
@@ -1031,28 +1032,38 @@ theorem acyclicWithin_of_phi {G : SimpleGraph α} [Inhabited α] {S : Finset α}
     have hsplen2 : w.support.length = w.length + 1 :=
       SimpleGraph.Walk.length_support w
     have hND2 := (List.nodup_iff_getElem?_ne_getElem?).mp hcy.support_nodup
-    have hne := hND2 (m - 1) (n - 1) (by omega)
-      (by rw [List.length_tail]; omega)
-    have hn? : w.support.tail[n - 1]? = some (sup[n]!) := by
-      rw [tail_getElem?, show n - 1 + 1 = n from by omega, hsupget! n (by omega)]
-      exact (w.getVert_eq_support_getElem? (by omega)).symm
     by_cases hm0 : m = 0
     · -- a occurs in the tail at positions n and w.length
+      have hnlt : n < w.length := by
+        by_contra hc
+        push_neg at hc
+        refine hnt ?_
+        rw [hm0, show n = Φ.length - 1 from by omega]
+        rfl
       have hna : w.getVert n = a := by
         rw [← hpointeq]
         simp only [hm0, SimpleGraph.Walk.getVert_zero]
+      have hn? : w.support.tail[n - 1]? = some (sup[n]!) := by
+        rw [tail_getElem?, show n - 1 + 1 = n from by omega, hsupget! n (by omega)]
+        exact (w.getVert_eq_support_getElem? (by omega)).symm
       have hk? : w.support.tail[w.length - 1]? = some a := by
         rw [tail_getElem?, show w.length - 1 + 1 = w.length from by omega]
-        rw [show w.support[w.length]? = some a from by
-          rw [← SimpleGraph.Walk.getVert_eq_support_getElem? (Nat.le_refl _)]
-          rw [SimpleGraph.Walk.getVert_length]]
+        have h1 : some (w.getVert w.length) = w.support[w.length]? :=
+          w.getVert_eq_support_getElem? (Nat.le_refl _)
+        rw [SimpleGraph.Walk.getVert_length] at h1
+        exact h1.symm
       have hnek := hND2 (n - 1) (w.length - 1) (by omega)
         (by rw [List.length_tail]; omega)
-      rw [hn?] at hnek
+      rw [hn?, hk?] at hnek
       rw [hsupget! n (by omega), hna] at hnek
       exact absurd rfl hnek
-    · have hm? : w.support.tail[m - 1]? = some (sup[m]!) := by
+    · have hne := hND2 (m - 1) (n - 1) (by omega)
+        (by rw [List.length_tail]; omega)
+      have hm? : w.support.tail[m - 1]? = some (sup[m]!) := by
         rw [tail_getElem?, show m - 1 + 1 = m from by omega, hsupget! m (by omega)]
+        exact (w.getVert_eq_support_getElem? (by omega)).symm
+      have hn? : w.support.tail[n - 1]? = some (sup[n]!) := by
+        rw [tail_getElem?, show n - 1 + 1 = n from by omega, hsupget! n (by omega)]
         exact (w.getVert_eq_support_getElem? (by omega)).symm
       rw [hm?, hn?, hsupget! m (by omega), hsupget! n (by omega), hpointeq] at hne
       exact absurd rfl hne
