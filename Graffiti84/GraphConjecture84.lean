@@ -94,7 +94,7 @@ theorem two_radius_le_treeNumber_mul_minDegree {G : SimpleGraph α} [Nonempty α
   have hrad1 : (1 : ℕ∞) ≤ G.radius := by
     refine (le_iInf_iff).mpr fun u => ?_
     have hu : (0 : ℕ∞) < G.eccent u :=
-      (SimpleGraph.eccent_pos_iff (G := G) u).mp inferInstance
+      pos_iff_ne_zero.mpr (G.eccent_ne_zero u)
     exact Order.one_le_iff_pos.mpr hu
   have hne0 : G.radius ≠ 0 := by
     intro h
