@@ -509,7 +509,8 @@ private lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
       have hstep : List.idxOf x (h :: r) = (List.idxOf x r) + 1 :=
         List.idxOf_cons_ne r (fun e => hne e.symm)
       rw [hstep] at hpos
-      have hrec := ih x hxr (by omega : 1 ≤ List.idxOf x r)
+      have hpos2 : 1 ≤ List.idxOf x r := by omega
+      have hrec := ih x hxr hpos2
       simp only [List.tail_cons]
       rw [hstep]
       omega
