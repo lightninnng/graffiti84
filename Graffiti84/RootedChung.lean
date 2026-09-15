@@ -733,17 +733,14 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     SimpleGraph.Walk.length_support q
   have hplen : p.support.length = r + 1 := by rw [hpsl, hp]
   have hv₁ : p.snd = p.getVert 1 :=
-    (SimpleGraph.Walk.getVert_zero p.tail).trans
-      (SimpleGraph.Walk.getVert_tail (p := p) (n := 0)).symm
+    (SimpleGraph.Walk.getVert_tail (p := p) (n := 0)).symm
   have hq1 : q.snd = q.getVert 1 :=
-    (SimpleGraph.Walk.getVert_zero q.tail).trans
-      (SimpleGraph.Walk.getVert_tail (p := q) (n := 0)).symm
+    (SimpleGraph.Walk.getVert_tail (p := q) (n := 0)).symm
   have hadj' : G.Adj p.snd q.snd := by rw [hv₁, hq1]; exact hadj
-  set E := SimpleGraph.Adj.toWalk hadj' with hEdef
-  set R := (p.tail.reverse.append E).append q.tail with hRdef
-  have hElen : E.length = 1 := by
-    rw [hEdef]
+  have hElen : (SimpleGraph.Adj.toWalk hadj').length = 1 := by
     simp [SimpleGraph.Adj.toWalk]
+  set R := (p.tail.reverse.append (SimpleGraph.Adj.toWalk hadj')).append q.tail
+    with hRdef
   -- support of the spliced walk
   have hsupR : R.support =
       p.support.tail.reverse ++ q.getVert 1 :: q.support.tail.tail := by
@@ -773,7 +770,7 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rcases Nat.eq_zero_or_pos (q.support.idxOf x) with h0 | hj1
     · -- x = v0 sits at p-position ≥ 1
       rw [h0, SimpleGraph.Walk.getVert_zero] at hxq
-      have hne := getVert_ne_of_length_eq_dist hpgeo hi1 (Nat.zero_le p.length)
+      have hne := getVert_ne_of_length_eq_dist hpgeo hile (Nat.zero_le p.length)
         (by omega)
       rw [SimpleGraph.Walk.getVert_zero] at hne
       exact hne (hxp.trans hxq.symm)
@@ -804,17 +801,31 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rcases hgeo with h | h
     · rw [hq0idx] at h; omega
     · omega
+  have hq1ninTT : ¬ (q.getVert 1 ∈ q.support.tail.tail) := by
+    intro hc
+    have h1 := idxOf_tail_succ q.support.tail hqN.tail (q.getVert 1) hc
+    have h2 := idxOf_tail_succ q.support hqN (q.getVert 1)
+      (List.mem_of_mem_tail hc)
+    omega
+  have hQge : ∀ x ∈ q.getVert 1 :: q.support.tail.tail,
+      1 ≤ q.support.idxOf x := by
+    intro x hx
+    rcases List.mem_cons.mp hx with e | hx3
+    · rw [e]; omega
+    · have h2t := idxOf_tail_succ q.support.tail hqN.tail x hx3
+      have h2c := idxOf_tail_succ q.support hqN x (List.mem_of_mem_tail hx3)
+      omega
   -- index positions in the spliced support
   have hPpos : ∀ x ∈ p.support.tail,
       R.support.idxOf x = r - p.support.idxOf x := by
     intro x hx
     have hxr : x ∈ p.support.tail.reverse := List.mem_reverse.mpr hx
     rw [hsupR, List.idxOf_append_of_mem hxr]
-    have h1 := idxOf_reverse_mem p.support.tail
-      (List.nodup_reverse.mpr hpN.tail) x hx
+    have h1 := idxOf_reverse_mem p.support.tail hpN.tail x hx
     have h2b := idxOf_tail_succ p.support hpN x hx
     have h3 : p.support.tail.reverse.length = r := by
       rw [List.length_reverse, List.length_tail, hplen]
+      omega
     omega
   have hQpos : ∀ x ∈ q.getVert 1 :: q.support.tail.tail,
       R.support.idxOf x = r + q.support.idxOf x - 1 := by
@@ -826,11 +837,14 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have h1 := List.idxOf_eq_length hxr
     have h2a : p.support.tail.reverse.length = r := by
       rw [List.length_reverse, List.length_tail, hplen]
+      omega
     rcases List.mem_cons.mp hx with e | hx3
     · subst e
       rw [List.idxOf_cons_self]
       omega
-    · have h2t := idxOf_tail_succ q.support.tail hqN.tail x hx3
+    · have hne : ¬ (q.getVert 1 = x) := fun ec => hq1ninTT (ec ▸ hx3)
+      rw [List.idxOf_cons_ne _ hne]
+      have h2t := idxOf_tail_succ q.support.tail hqN.tail x hx3
       have h2c := idxOf_tail_succ q.support hqN x (List.mem_of_mem_tail hx3)
       omega
   have hdisj2 : List.Disjoint p.support.tail.reverse
@@ -839,7 +853,8 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     exact hcore2 x (List.mem_reverse.mp hx1) (hQmem x hx2)
   have hLnd : R.support.Nodup := by
     rw [hsupR]
-    exact (List.nodup_reverse.mpr hpN.tail).append hqN.tail.tail hdisj2
+    exact (List.nodup_reverse.mpr hpN.tail).append
+      (List.nodup_cons.mpr ⟨hq1ninTT, hqN.tail.tail⟩) hdisj2
   -- chord-freeness of the spliced support
   have hchord : ∀ u v, u ∈ R.support → v ∈ R.support → G.Adj u v →
       (R.support.idxOf u + 1 = R.support.idxOf v ∨
@@ -880,6 +895,7 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
         omega
       have hui := hPpos u hu1
       have hvi := hQpos v hv2
+      have hge := hQge v hv2
       rcases Nat.lt_or_ge (p.support.idxOf u) 2 with h1i | h2i
       · -- i = 1: u = v1
         have hi1' : p.support.idxOf u = 1 := by omega
@@ -976,12 +992,16 @@ theorem rooted_chung {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   · -- m = 0: r = 2 and the geodesic p alone spans 2r - 1 vertices
     have h2' : 2 ≤ p.length := by rw [hp]; exact hr2
     have hv₂₀ : G.dist v₂ v₀ = 2 := by
-      rw [← hv₂]
+      rw [← hv₂, SimpleGraph.dist_comm]
       exact dist_getVert_of_length_eq_dist hpgeo 2 h2'
     have ht : G.dist v₂ w ≤ 2 := by
       have htr := hconn.dist_triangle (u := v₂) (v := v₀) (w := w)
-      rw [hv₂₀, ← hq, hm0] at htr
-      omega
+      rw [hv₂₀] at htr
+      cases q with
+      | nil => rw [SimpleGraph.dist_self] at htr; omega
+      | cons h' t' =>
+        rw [SimpleGraph.Walk.length_cons] at hm0
+        omega
     refine ⟨p.support.toFinset, isInducedTree_of_walk_chords p ?_, ?_, ?_⟩
     · intro u v hu hv hadj
       exact geodesic_adj_support_succ hconn hpgeo hu hv hadj
