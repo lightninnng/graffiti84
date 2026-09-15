@@ -482,8 +482,10 @@ private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
           rw [List.mem_reverse]; exact hxr
         rw [List.reverse_cons,
           List.idxOf_append_of_mem hxrev,
-          List.idxOf_cons_ne r (fun e => hxe e.symm)]
-        simp only [List.length_cons, List.length_reverse]
+          List.idxOf_cons_ne r (fun e => hxe e.symm),
+          Nat.succ_eq_add_one]
+        have key := hrec
+        simp only [List.length_cons] at key ⊢
         omega
 
 end Graffiti84
