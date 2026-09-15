@@ -705,7 +705,7 @@ exists, 7c forces `m + 1 = r`, and the three-segment walk `a ↝ v₁`, chord,
 the splice removes `v₀`, so the chord joins the neighbouring positions
 `r - 1` and `r`. -/
 theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
-    {v₀ v₂ w : α} {p : G.Walk v₀ a} {q : G.Walk v₀ w}
+    {v₀ w : α} {p : G.Walk v₀ a} {q : G.Walk v₀ w}
     (hp : p.length = G.radius.toNat) (hdva : G.dist v₀ a = G.radius.toNat)
     (hq : q.length = G.dist v₀ w) (h2 : 2 ≤ p.length)
     (h7a : ∀ i j, i ≤ q.length → j ≤ p.length → 2 ≤ j →
@@ -740,8 +740,7 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rw [SimpleGraph.Walk.snd_eq_support_getElem_one hqnn,
       SimpleGraph.Walk.getVert_eq_support_getElem q (by omega)]
   have hadj' : G.Adj p.snd q.snd := by rw [hv₁, hq1]; exact hadj
-  have hElen : (SimpleGraph.Adj.toWalk hadj').length = 1 := by
-    simp [SimpleGraph.Adj.toWalk]
+  have hElen : (SimpleGraph.Adj.toWalk hadj').length = 1 := rfl
   set R := (p.tail.reverse.append (SimpleGraph.Adj.toWalk hadj')).append q.tail
     with hRdef
   -- support of the spliced walk
