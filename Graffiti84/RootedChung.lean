@@ -286,6 +286,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius) :
     ∃ (v₀ v₂ w : α) (p : G.Walk v₀ a) (q : G.Walk v₀ w),
       p.length = G.radius.toNat ∧ G.dist v₀ a = G.radius.toNat ∧
+      q.length = G.dist v₀ w ∧
       q.length + 1 ≤ p.length ∧ 2 ≤ p.length ∧
       p.getVert 2 = v₂ ∧ p.length ≤ G.dist v₂ w ∧
       (∀ i j, i ≤ q.length → j ≤ p.length → 2 ≤ j →
@@ -309,7 +310,7 @@ theorem chung_chords {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   haveI : Nonempty α := hconn.nonempty
   have hmle : q.length + 1 ≤ G.radius.toNat := by rw [hq]; exact hdvw
   have hrle : G.radius.toNat ≤ p.length := (hp.trans hdva).symm.le
-  refine ⟨v₀, v₂, w, p, q, hp.trans hdva, hdva, ?_, ?_, hv₂,
+  refine ⟨v₀, v₂, w, p, q, hp.trans hdva, hdva, hq, ?_, ?_, hv₂,
     (hp.trans hdva).le.trans hdv₂w, ?_, ?_, ?_, ?_⟩
   · exact by rw [hq, hp, hdva]; exact hdvw
   · exact le_trans hr2 hrle
@@ -732,10 +733,12 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   have hqsl : q.support.length = q.length + 1 :=
     SimpleGraph.Walk.length_support q
   have hplen : p.support.length = r + 1 := by rw [hpsl, hp]
-  have hv₁ : p.snd = p.getVert 1 :=
-    (SimpleGraph.Walk.getVert_tail (p := p) (n := 0)).symm
-  have hq1 : q.snd = q.getVert 1 :=
-    (SimpleGraph.Walk.getVert_tail (p := q) (n := 0)).symm
+  have hv₁ : p.snd = p.getVert 1 := by
+    rw [SimpleGraph.Walk.snd_eq_support_getElem_one hpnn,
+      SimpleGraph.Walk.getVert_eq_support_getElem p (by omega)]
+  have hq1 : q.snd = q.getVert 1 := by
+    rw [SimpleGraph.Walk.snd_eq_support_getElem_one hqnn,
+      SimpleGraph.Walk.getVert_eq_support_getElem q (by omega)]
   have hadj' : G.Adj p.snd q.snd := by rw [hv₁, hq1]; exact hadj
   have hElen : (SimpleGraph.Adj.toWalk hadj').length = 1 := by
     simp [SimpleGraph.Adj.toWalk]
@@ -823,8 +826,8 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rw [hsupR, List.idxOf_append_of_mem hxr]
     have h1 := idxOf_reverse_mem p.support.tail hpN.tail x hx
     have h2b := idxOf_tail_succ p.support hpN x hx
-    have h3 : p.support.tail.reverse.length = r := by
-      rw [List.length_reverse, List.length_tail, hplen]
+    have h4 : p.support.tail.length = r := by
+      rw [List.length_tail, hplen]
       omega
     omega
   have hQpos : ∀ x ∈ q.getVert 1 :: q.support.tail.tail,
@@ -937,6 +940,9 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
         omega
       have hui := hQpos u hu2
       have hvi := hPpos v hv1
+      have hpge : 1 ≤ p.support.idxOf v := by
+        have := idxOf_tail_succ p.support hpN v hv1
+        omega
       rcases Nat.lt_or_ge (p.support.idxOf v) 2 with h1i | h2i
       · -- j = 1: v = v1
         have hi1' : p.support.idxOf v = 1 := by omega
@@ -985,7 +991,7 @@ theorem rooted_chung {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     (hdrop : radOn G (Finset.univ.erase a) + 1 ≤ G.radius) :
     ∃ S : Finset α, IsInducedTree G S ∧ a ∈ S ∧
       2 * G.radius.toNat - 1 ≤ S.card := by
-  obtain ⟨v₀, v₂, w, p, q, hp, hdva, hmle, h2, hv₂, hpw, h7a, h7b, h7c,
+  obtain ⟨v₀, v₂, w, p, q, hp, hdva, hq, hmle, h2, hv₂, hpw, h7a, h7b, h7c,
     hover⟩ := chung_chords hconn hr2 hdrop
   have hpgeo : p.length = G.dist v₀ a := hp.trans hdva.symm
   rcases Nat.eq_zero_or_pos q.length with hm0 | h1m
