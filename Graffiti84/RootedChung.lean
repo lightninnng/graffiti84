@@ -694,7 +694,7 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     have horder : r ≤ q.length + 2 := by
       calc r = p.length := hp.symm
         _ ≤ G.dist v₂ w := hpw
-        _ ≤ q.length + 2 := ht
+        _ ≤ 2 + q.length := ht
     omega
 
 end Graffiti84
