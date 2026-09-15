@@ -562,11 +562,10 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     rcases Nat.eq_zero_or_pos (p.support.idxOf x) with h0 | h2i
     · -- x = v0 sits at q-position ≥ 1: contradicts geodesic injectivity
       rw [h0, SimpleGraph.Walk.getVert_zero] at hxg
-      rw [← hxg] at hxgq
       have hne := getVert_ne_of_length_eq_dist hq hjle (Nat.zero_le q.length)
         (by omega)
       rw [SimpleGraph.Walk.getVert_zero] at hne
-      exact hne hxgq
+      exact hne (hxgq.trans hxg.symm)
     · exact hover (p.support.idxOf x) (q.support.idxOf x) h2i hile hj1 hjle
         (hxg.trans hxgq.symm)
   have hdisj : List.Disjoint p.support.reverse q.support.tail := by
@@ -688,10 +687,10 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       hQdef, SimpleGraph.Walk.length_append,
       SimpleGraph.Walk.length_reverse]
     have hv₂₀ : G.dist v₂ v₀ = 2 := by
-      rw [SimpleGraph.dist_comm]
+      rw [← hv₂, SimpleGraph.dist_comm]
       exact dist_getVert_of_length_eq_dist hpgeo 2 h2
     have ht := hconn.dist_triangle (u := v₂) (v := v₀) (w := w)
-    rw [hv₂₀, hq] at ht
+    rw [hv₂₀, ← hq] at ht
     have horder : r ≤ q.length + 2 := by
       calc r = p.length := hp.symm
         _ ≤ G.dist v₂ w := hpw
