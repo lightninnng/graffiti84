@@ -489,4 +489,26 @@ private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
         simp only [List.length_cons] at key ⊢
         omega
 
+
+private lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
+    ∀ (l : List β) (x : β), x ∈ l → 1 ≤ List.idxOf x l →
+      List.idxOf x l.tail + 1 = List.idxOf x l := by
+  intro l
+  induction l with
+  | nil => intro x hx; simp at hx
+  | cons h r ih =>
+      intro x hx hpos
+      have hne : x ≠ h := by
+        intro e
+        rw [e] at hpos
+        simp at hpos
+      have hxr : x ∈ r := by
+        rcases List.mem_cons.mp hx with h1 | h2
+        · exact absurd h1 hne
+        · exact h2
+      have : List.idxOf x (h :: r) = (List.idxOf x r) + 1 :=
+        List.idxOf_cons_ne r (fun e => hne e.symm)
+      rw [this]
+      exact ih x hxr (by omega)
+
 end Graffiti84
