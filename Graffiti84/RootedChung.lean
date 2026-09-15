@@ -751,8 +751,7 @@ theorem rooted_chung_chord {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       p.support_tail_of_not_nil hpnn, q.support_tail_of_not_nil hqnn,
       SimpleGraph.Adj.toWalk, SimpleGraph.Walk.support_cons,
       SimpleGraph.Walk.support_nil, List.tail_cons, List.append_assoc,
-      List.cons_append, List.nil_append]
-    rw [hq1]
+      List.cons_append, List.nil_append, hq1]
   -- overlap exclusion between the two pieces
   have hcore2 : ∀ x, x ∈ p.support.tail → x ∈ q.support → False := by
     intro x hx1 hx2
