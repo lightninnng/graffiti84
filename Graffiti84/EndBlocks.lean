@@ -22,13 +22,9 @@ private lemma idxOf_eq_of_getElem' {β : Type*} [DecidableEq β] {l : List β}
     (hnd : l.Nodup) {a : β} {j : ℕ} (hj : j < l.length) (hv : l[j] = a) :
     l.idxOf a = j := by
   have hmem : a ∈ l := hv ▸ List.getElem_mem hj
-  have his : (l.idxOf? a).isSome := by simpa using hmem
-  obtain ⟨i, hio⟩ := Option.isSome_iff_exists.mp his
-  obtain ⟨hi, hv2, _⟩ := List.idxOf?_eq_some_iff.mp hio
-  have hij : i = j :=
-    (hnd.getElem_inj_iff (i := i) (j := j) hi hj).mp (hv2.trans hv.symm)
-  rw [show l.idxOf a = i from by simp [List.idxOf, hio]]
-  exact hij.symm
+  have hlt := List.idxOf_lt_length_of_mem hmem
+  have hge : l[l.idxOf a]'hlt = a := List.getElem_idxOf hlt
+  exact (hnd.getElem_inj_iff).mp (hge.trans hv.symm)
 
 /-- Membership in a prefix of a duplicate-free list is equivalent to the
 index bound, provided the prefix does not run past the list. -/
@@ -39,10 +35,12 @@ private lemma mem_take_iff_idxOf_lt' {β : Type*} [DecidableEq β] {l : List β}
   · obtain ⟨j, hj, heq⟩ := List.mem_take_iff_getElem.mp hc
     have hjl : j < l.length := by omega
     rw [idxOf_eq_of_getElem' hnd hjl heq]
-    exact hj
+    omega
   · have hlt := List.idxOf_lt_length_of_mem hmem
     have hv : l[l.idxOf a]'hlt = a := List.getElem_idxOf hlt
-    exact List.mem_take_iff_getElem.mpr ⟨l.idxOf a, hc, by simp [hv]⟩
+    refine List.mem_take_iff_getElem.mpr ⟨l.idxOf a, ?_, hv⟩
+    rw [Nat.min_eq_left hn]
+    exact hc
 
 private lemma nodup_take' {β : Type*} [DecidableEq β] :
     ∀ (n : ℕ) (l : List β), l.Nodup → (l.take n).Nodup := by
@@ -66,18 +64,20 @@ private theorem getVert_inj_of_isPath {G : SimpleGraph α} {u v : α}
     rw [SimpleGraph.Walk.length_support]; omega
   have hlj : j < p.support.length := by
     rw [SimpleGraph.Walk.length_support]; omega
-  have hii : p.support[i] = p.getVert i :=
+  have hii : p.getVert i = p.support[i] :=
     SimpleGraph.Walk.getVert_eq_support_getElem p hi
-  have hjj : p.support[j] = p.getVert j :=
+  have hjj : p.getVert j = p.support[j] :=
     SimpleGraph.Walk.getVert_eq_support_getElem p hj
-  exact (List.getElem_inj (h₀ := hli) (h₁ := hlj) hpn).mpr (by rw [hii, hjj, hij])
+  refine (List.getElem_inj (h₀ := hli) (h₁ := hlj) hpn).mpr ?_
+  rw [hii, hjj]
+  exact hij
 
 private theorem dist_self' {G : SimpleGraph α} (hconn : G.Connected) (c : α) :
     G.dist c c = 0 := by
-  obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist c c
-  cases t with
-  | nil => exact ht.symm
-  | cons h t' => rw [SimpleGraph.Walk.length_cons] at ht; omega
+  have hle : G.dist c c ≤ SimpleGraph.Walk.nil.length :=
+    SimpleGraph.dist_le SimpleGraph.Walk.nil
+  rw [SimpleGraph.Walk.length_nil] at hle
+  exact le_antisymm hle (Nat.zero_le _)
 
 /-! ### F10 -/
 
@@ -101,14 +101,14 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
     rcases List.mem_cons.mp hx1 with e | e
     · subst e
       exact hys (List.mem_of_mem_tail hx2)
-    · subst e
-      have hu0 : p.support.idxOf u = 0 := by
-        have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
-          (SimpleGraph.Walk.getVert_support_idxOf p
-            p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem
-          p.start_mem_support) (Nat.zero_le _) hxg
-      have hts := idxOf_tail_succ p.support hpn u hx2
+    · -- x ∈ [u], i.e. x = u; work with x directly
+      have hu0 : p.support.idxOf x = 0 := by
+        have hxg : p.getVert (p.support.idxOf x) = p.getVert 0 :=
+          (SimpleGraph.Walk.getVert_support_idxOf p hx2).trans
+            (SimpleGraph.Walk.getVert_zero p).symm
+        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hx2)
+          (Nat.zero_le _) hxg
+      have hts := idxOf_tail_succ p.support hpn x hx2
       omega
   have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
     rw [SimpleGraph.Walk.length_append]
@@ -144,14 +144,17 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [SimpleGraph.Walk.length_cons] at hm
         omega
     -- the penultimate vertex of `q` lies on `p`
+    have hvL : q.getVert q.length = u := SimpleGraph.Walk.getVert_length q
+    rw [← hm] at hvL
     have hxmne : q.getVert (m - 1) ≠ u := by
-      have h1' := getVert_ne_of_length_eq_dist hq (Nat.zero_le _) hm1 (by omega)
-      rw [SimpleGraph.Walk.getVert_length] at h1'
-      exact h1'
+      intro e
+      have hin := getVert_inj_of_isPath hqpath (by omega) (le_of_eq rfl)
+        (e.trans hvL.symm)
+      omega
     have hxm : q.getVert (m - 1) ∈ p.support := by
       have hadjm : G.Adj (q.getVert (m - 1)) (q.getVert m) :=
-        SimpleGraph.Walk.adj_getVert_succ q (by rw [hm]; omega)
-      rw [SimpleGraph.Walk.getVert_length] at hadjm
+        SimpleGraph.Walk.adj_getVert_succ q (i := m - 1) (by rw [hm]; omega)
+      rw [hvL] at hadjm
       exact mem_support_of_longest hp hmax hadjm
     set i := p.support.idxOf (q.getVert (m - 1)) with hi
     have hgx : p.getVert i = q.getVert (m - 1) :=
@@ -163,14 +166,15 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       · exact h2
     -- prefix of the geodesic: z to the penultimate vertex, avoiding u
     have hQsup : (q.take (m - 1)).support = q.support.take m := by
-      rw [SimpleGraph.Walk.support_take]; omega
+      rw [SimpleGraph.Walk.support_take]
+      congr 1
+      omega
     have hQu : u ∉ (q.take (m - 1)).support := by
       intro hc
       rw [hQsup, List.mem_take_iff_getElem] at hc
       obtain ⟨j, hj, heq⟩ := hc
       have hjl : j < q.support.length := by
         have h2 := hql
-        rw [← hm] at h2
         omega
       have hju : q.support.idxOf u = j :=
         idxOf_eq_of_getElem' hqn hjl heq
@@ -178,22 +182,22 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         have hux : q.getVert (q.support.idxOf u) = q.getVert m :=
           (SimpleGraph.Walk.getVert_support_idxOf q
             (SimpleGraph.Walk.end_mem_support q)).trans
-            (SimpleGraph.Walk.getVert_length q).symm
+            (by rw [hm]; exact (SimpleGraph.Walk.getVert_length q).symm)
         rw [hju] at hux
         exact getVert_inj_of_isPath hqpath
           (List.idxOf_lt_length_of_mem (SimpleGraph.Walk.end_mem_support q))
-          (le_of_eq hm.symm) hux
+          (le_of_eq hm) hux
       omega
     -- backward segment of `p` from position i down to position 1, avoiding u
     set W := (p.take i).reverse with hW
     have hWsup : W.support = (p.support.take (i + 1)).reverse := by
       rw [hW, SimpleGraph.Walk.support_reverse, SimpleGraph.Walk.support_take]
     have hTnd : (p.support.take (i + 1)).Nodup := nodup_take' _ _ hpn
-    have hTlen : (p.support.take (i + 1)).length = i + 1 := by
-      rw [List.length_take]
-      omega
     have hib : i + 1 ≤ p.support.length := by
       have := List.idxOf_lt_length_of_mem hxm
+      omega
+    have hTlen : (p.support.take (i + 1)).length = i + 1 := by
+      rw [List.length_take]
       omega
     have huT : u ∈ p.support.take (i + 1) := by
       rw [mem_take_iff_idxOf_lt' hTnd (SimpleGraph.Walk.start_mem_support p)
