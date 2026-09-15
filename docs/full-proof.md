@@ -94,7 +94,7 @@ w ≠ x(否则 deg(x) = 1)。w 是叶,唯一邻点是 z;对 w(w ≠ a)用假设�
 
 ---
 
-## §2 有根 Chung 引理(✅ 完整,含原论文隐式步骤 (a)(b) 的补全)
+## §2 有根 Chung 引理(✅ 完整,含原论文隐式步骤 (a)(b) 的补全;✅ Lean 已证:`RootedChung.rooted_chung`——`chung_context` 距离账 + `chung_chords` 七条弦排除 + `rooted_chung_flat` 无弦拼接 + `rooted_chung_chord` 三段拼接 + 派发,Run #124 全绿)
 
 > **引理 2.1(有根 Chung).** F 有限连通,`r(F) = r ≥ 2`,a 非割点,
 > `r(F−a) = r−1`。则 F 含一条**含 a** 的诱导路径,阶 ≥ 2r−1。
