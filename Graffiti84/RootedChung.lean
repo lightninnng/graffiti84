@@ -528,12 +528,16 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   haveI : Nonempty α := hconn.nonempty
   haveI : Inhabited α := ⟨v₀⟩
   set r := G.radius.toNat with hrdef
-  have hpp : p.IsPath := isPath_of_length_eq_dist hconn (hp.trans hdva)
+  have hpgeo : p.length = G.dist v₀ a := hp.trans hdva.symm
+  have hpp : p.IsPath := isPath_of_length_eq_dist hconn hpgeo
   have hqq : q.IsPath := isPath_of_length_eq_dist hconn hq
   have hpN : p.support.Nodup := hpp.support_nodup
   have hqN : q.support.Nodup := hqq.support_nodup
-  have hplen : p.support.length = r + 1 := by
-    rw [SimpleGraph.Walk.length_support, hp]
+  have hpsl : p.support.length = p.length + 1 :=
+    SimpleGraph.Walk.length_support p
+  have hqsl : q.support.length = q.length + 1 :=
+    SimpleGraph.Walk.length_support q
+  have hplen : p.support.length = r + 1 := by rw [hpsl, hp]
   -- the glued walk and its support list
   set Q := p.reverse.append q with hQdef
   have hsupL : Q.support = p.support.reverse ++ q.support.tail := by
@@ -565,8 +569,9 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       exact hne hxgq
     · exact hover (p.support.idxOf x) (q.support.idxOf x) h2i hile hj1 hjle
         (hxg.trans hxgq.symm)
-  have hdisj : List.Disjoint p.support.reverse q.support.tail :=
-    ⟨fun x hx1 hx2 => hcore x (List.mem_reverse.mp hx1) hx2⟩
+  have hdisj : List.Disjoint p.support.reverse q.support.tail := by
+    intro x hx1 hx2
+    exact hcore x (List.mem_reverse.mp hx1) hx2
   have hLnd : Q.support.Nodup := by
     rw [hsupL]
     exact (List.nodup_reverse.mpr hpN).append hqN.tail hdisj
@@ -614,7 +619,7 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       have hvq : v ∈ q.support := List.mem_of_mem_tail hv
       have hgeo := geodesic_adj_support_succ hconn hq huq hvq hadj
       have hgx : q.getVert (q.support.idxOf u) = q.getVert 0 :=
-        (SimpleGraph.Walk.getVert_support_idxOf q huq).trans hu0.symm
+        (SimpleGraph.Walk.getVert_support_idxOf q huq).trans hu0
       have hu0idx : q.support.idxOf u = 0 := by
         rcases Nat.eq_zero_or_pos (q.support.idxOf u) with k0 | k1
         · exact k0
@@ -632,16 +637,16 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
         rcases Nat.lt_or_ge (q.support.idxOf v) 2 with hjv1 | hjv2
         · have hjv1' : q.support.idxOf v = 1 := by omega
           rw [hjv1'] at hgv
-          refine hnc ?_
-          rw [hgu, hgv]
-          exact hadj
-        · refine h7b (q.support.idxOf v) hjv2 hjle ?_
-          rw [hgu, hgv]
-          exact hadj
+          exact absurd (show G.Adj (p.getVert 1) (q.getVert 1) from by
+            rw [hgu, hgv]; exact hadj) hnc
+        · exact absurd (show G.Adj (p.getVert 1)
+              (q.getVert (q.support.idxOf v)) from by
+            rw [hgu, hgv]; exact hadj) (h7b (q.support.idxOf v) hjv2 hjle)
       · -- i ≥ 2: contradicts 7a
-        refine h7a (q.support.idxOf v) (p.support.idxOf u) hjle hile h2i ?_
-        rw [hgv, hgu]
-        exact hadj.symm
+        exact absurd (show G.Adj (q.getVert (q.support.idxOf v))
+              (p.getVert (p.support.idxOf u)) from by
+            rw [hgv, hgu]; exact hadj.symm)
+          (h7a (q.support.idxOf v) (p.support.idxOf u) hjle hile h2i)
   -- chord-freeness of the glued support
   have hchord : ∀ u v, u ∈ Q.support → v ∈ Q.support → G.Adj u v →
       (Q.support.idxOf u + 1 = Q.support.idxOf v ∨
@@ -653,7 +658,11 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       rw [List.mem_reverse] at hu1 hv1
       have hi := hpidx u hu1
       have hj := hpidx v hv1
-      have hgeo := geodesic_adj_support_succ hconn (hp.trans hdva) hu1 hv1 hadj
+      have hib : p.support.idxOf u ≤ p.length := by
+        have := List.idxOf_lt_length_of_mem hu1; omega
+      have hjb : p.support.idxOf v ≤ p.length := by
+        have := List.idxOf_lt_length_of_mem hv1; omega
+      have hgeo := geodesic_adj_support_succ hconn hpgeo hu1 hv1 hadj
       rcases hgeo with h | h
       · right; omega
       · left; omega
@@ -670,21 +679,23 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       have hui := hqidx u hu2
       have hvi := hqidx v hv2
       rcases hgeo with h | h
-      · right; omega
       · left; omega
+      · right; omega
   refine ⟨Q.support.toFinset, isInducedTree_of_walk_chords Q hchord, ?_, ?_⟩
   · rw [List.mem_toFinset, hsupL, List.mem_append, List.mem_reverse]
     exact Or.inl (SimpleGraph.Walk.end_mem_support p)
   · rw [List.toFinset_card_of_nodup hLnd, SimpleGraph.Walk.length_support,
       hQdef, SimpleGraph.Walk.length_append,
       SimpleGraph.Walk.length_reverse]
+    have hv₂₀ : G.dist v₀ v₂ = 2 := by
+      rw [← hv₂]
+      exact dist_getVert_of_length_eq_dist hpgeo 2 h2
+    have ht := hconn.dist_triangle (u := v₂) (v := v₀) (w := w)
+    rw [hv₂₀, hq] at ht
     have horder : r ≤ q.length + 2 := by
       calc r = p.length := hp.symm
         _ ≤ G.dist v₂ w := hpw
-        _ ≤ G.dist v₂ v₀ + G.dist v₀ w := hconn.dist_triangle
-        _ = 2 + q.length := by
-            rw [SimpleGraph.dist_comm v₂ v₀, ← hv₂,
-              dist_getVert_of_length_eq_dist (hp.trans hdva) 2 h2, hq]
+        _ ≤ q.length + 2 := ht
     omega
 
 end Graffiti84
