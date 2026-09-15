@@ -1,0 +1,412 @@
+import Graffiti84.RootedChung
+
+/-!
+# EndBlocks
+
+Case B tools: `F10` (every finite connected graph on at least two vertices
+has two distinct non-cut vertices, via a longest path) and `F12` (radius
+`≥ 2` forces at least four vertices).
+-/
+
+namespace Graffiti84
+
+open Classical
+
+variable {α : Type*} [Fintype α] [DecidableEq α]
+
+/-! ### List helpers -/
+
+/-- On a duplicate-free list, the index of a value is determined by any
+position at which it sits. -/
+private lemma idxOf_eq_of_getElem' {β : Type*} [DecidableEq β] {l : List β}
+    (hnd : l.Nodup) {a : β} {j : ℕ} (hj : j < l.length) (hv : l[j] = a) :
+    l.idxOf a = j := by
+  have hmem : a ∈ l := hv ▸ List.getElem_mem hj
+  have his : (l.idxOf? a).isSome := by simpa using hmem
+  obtain ⟨i, hio⟩ := Option.isSome_iff_exists.mp his
+  obtain ⟨hi, hv2, _⟩ := List.idxOf?_eq_some_iff.mp hio
+  have hij : i = j := hnd.getElem_inj_iff.mpr (hv2.symm.trans hv)
+  rw [show l.idxOf a = i from by simp [List.idxOf, hio]]
+  exact hij.symm
+
+/-- Membership in a prefix of a duplicate-free list is equivalent to the
+index bound. -/
+private lemma mem_take_iff_idxOf_lt' {β : Type*} [DecidableEq β] {l : List β}
+    (hnd : l.Nodup) {a : β} (hmem : a ∈ l) {n : ℕ} :
+    a ∈ l.take n ↔ l.idxOf a < n := by
+  refine ⟨fun hc => ?_, fun hc => ?_⟩
+  · obtain ⟨j, hj, heq⟩ := List.mem_take_iff_getElem.mp hc
+    rw [List.getElem?_eq_some_iff] at heq
+    rw [idxOf_eq_of_getElem' hnd heq.1 heq.2]
+    exact hj
+  · have hv : l[l.idxOf a] = a := List.getElem_idxOf hmem
+    exact List.mem_take_iff_getElem.mpr ⟨l.idxOf a, hc, by simpa using hv⟩
+
+private lemma nodup_take' {β : Type*} [DecidableEq β] :
+    ∀ (n : ℕ) (l : List β), l.Nodup → (l.take n).Nodup := by
+  intro n l h
+  induction l generalizing n with
+  | nil => exact List.nodup_nil
+  | cons a t ih =>
+    obtain ⟨h1, h2⟩ := List.nodup_cons.mp h
+    cases n with
+    | zero => simp
+    | succ m =>
+      refine List.nodup_cons.mpr ⟨fun hc => h1 (List.mem_of_mem_take hc), ?_⟩
+      exact ih t h2
+
+/-- Vertices of a path at distinct positions are distinct. -/
+private theorem getVert_inj_of_isPath {G : SimpleGraph α} {u v : α}
+    {p : G.Walk u v} (hp : p.IsPath) {i j : ℕ} (hi : i ≤ p.length)
+    (hj : j ≤ p.length) (hij : p.getVert i = p.getVert j) : i = j := by
+  have hinj : (p.support.get ·).Injective :=
+    (SimpleGraph.Walk.isPath_iff_injective_get_support p).mp hp
+  have hli : i < p.support.length := by
+    rw [SimpleGraph.Walk.length_support]; omega
+  have hlj : j < p.support.length := by
+    rw [SimpleGraph.Walk.length_support]; omega
+  exact hinj (by rw [hij])
+
+private theorem dist_self' {G : SimpleGraph α} (hconn : G.Connected) (c : α) :
+    G.dist c c = 0 := by
+  obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist c c
+  cases t with
+  | nil => rfl
+  | cons h t' => rw [SimpleGraph.Walk.length_cons] at ht; omega
+
+/-! ### F10 -/
+
+/-- The neighbours of the start of a longest path all lie on the path:
+otherwise the walk through the new neighbour would be a longer path. -/
+private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
+    {p : G.Walk u v} (hp : p.IsPath)
+    (hmax : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ p.length)
+    {y : α} (hy : G.Adj y u) : y ∈ p.support := by
+  by_contra hys
+  have hpn : p.support.Nodup := hp.support_nodup
+  have hyu : y ≠ u := G.ne_of_adj hy
+  have hpath : ((SimpleGraph.Adj.toWalk hy).append p).IsPath := by
+    refine SimpleGraph.Walk.IsPath.mk' ?_
+    rw [SimpleGraph.Walk.support_append]
+    have he1 : (SimpleGraph.Adj.toWalk hy).support = [y, u] := by
+      simp [SimpleGraph.Adj.toWalk]
+    rw [he1]
+    refine List.nodup_append.mpr ⟨by simp [hyu], hpn.tail, ?_⟩
+    intro x hx1 hx2
+    rcases List.mem_cons.mp hx1 with rfl | rfl
+    · exact hys (List.mem_of_mem_tail hx2)
+    · have hu0 : p.support.idxOf u = 0 := by
+        have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
+          (SimpleGraph.Walk.getVert_support_idxOf p
+            p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
+        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem
+          p.start_mem_support) (Nat.zero_le _) hxg
+      have hts := idxOf_tail_succ p.support hpn u hx2
+      omega
+  have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
+    rw [SimpleGraph.Walk.length_append]
+    have h1 : (SimpleGraph.Adj.toWalk hy).length = 1 := rfl
+    omega
+  exact absurd (hmax _ _ _ hpath) (by omega)
+
+/-- **F10, endpoint half.** Along a longest path, every other vertex reaches
+the path's second vertex by a walk avoiding the start, so the start is not
+a cut vertex. -/
+private theorem deleteConnected_of_longest {G : SimpleGraph α}
+    (hconn : G.Connected) {u v : α} {p : G.Walk u v} (hp : p.IsPath)
+    (h1 : 1 ≤ p.length)
+    (hmax : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ p.length) :
+    DeleteConnected G u := by
+  have hpn : p.support.Nodup := hp.support_nodup
+  have hpsl : p.support.length = p.length + 1 :=
+    SimpleGraph.Walk.length_support p
+  -- every z ≠ u reaches the second vertex of `p` by a walk avoiding u
+  have reach : ∀ z : α, z ≠ u → ∃ w : G.Walk z (p.getVert 1), u ∉ w.support := by
+    intro z hzu
+    obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist z u
+    have hqpath : q.IsPath := isPath_of_length_eq_dist hconn hq
+    have hqn : q.support.Nodup := hqpath.support_nodup
+    have hql : q.support.length = q.length + 1 :=
+      SimpleGraph.Walk.length_support q
+    set m := q.length with hm
+    have hm1 : 1 ≤ m := by
+      by_contra h0
+      cases q with
+      | nil => exact hzu rfl
+      | cons h t =>
+        rw [SimpleGraph.Walk.length_cons] at hm
+        omega
+    -- the penultimate vertex of `q` lies on `p`
+    have hxmne : q.getVert (m - 1) ≠ u := by
+      have h1' := SimpleGraph.Walk.getVert_ne_of_length_eq_dist hq
+        (Nat.zero_le _) hm1 (by omega)
+      rw [SimpleGraph.Walk.getVert_length] at h1'
+      exact h1'
+    have hxm : q.getVert (m - 1) ∈ p.support := by
+      have hadjm : G.Adj (q.getVert (m - 1)) (q.getVert m) :=
+        SimpleGraph.Walk.adj_getVert_succ q (by omega)
+      rw [SimpleGraph.Walk.getVert_length] at hadjm
+      exact mem_support_of_longest hp hmax hadjm
+    set i := p.support.idxOf (q.getVert (m - 1)) with hi
+    have hgx : p.getVert i = q.getVert (m - 1) :=
+      SimpleGraph.Walk.getVert_support_idxOf p hxm
+    have hi1 : 1 ≤ i := by
+      rcases Nat.eq_zero_or_pos i with h0 | h2
+      · rw [h0] at hgx
+        exact absurd hxmne hgx.symm
+      · exact h2
+    -- prefix of the geodesic: z to the penultimate vertex, avoiding u
+    have hQsup : (q.take (m - 1)).support = q.support.take m := by
+      rw [SimpleGraph.Walk.support_take]; omega
+    have hQu : u ∉ (q.take (m - 1)).support := by
+      intro hc
+      rw [hQsup, List.mem_take_iff_getElem] at hc
+      obtain ⟨j, hj, heq⟩ := hc
+      rw [List.getElem?_eq_some_iff] at heq
+      have hjl : j < q.support.length := by
+        have h1 := hql
+        rw [← hm] at h1
+        omega
+      have hju : q.support.idxOf u = j :=
+        idxOf_eq_of_getElem' hqn hjl heq.2
+      have hjm : j = m := by
+        have hux : q.getVert (q.support.idxOf u) = q.getVert m :=
+          (SimpleGraph.Walk.getVert_support_idxOf q
+            (SimpleGraph.Walk.end_mem_support q)).trans
+            (SimpleGraph.Walk.getVert_length q).symm
+        rw [hju] at hux
+        exact getVert_inj_of_isPath hqpath
+          (List.idxOf_lt_length_of_mem (SimpleGraph.Walk.end_mem_support q))
+          (le_of_eq hm.symm) hux
+      omega
+    -- backward segment of `p` from position i down to position 1, avoiding u
+    set W := (p.take i).reverse with hW
+    have hWsup : W.support = (p.support.take (i + 1)).reverse := by
+      rw [hW, SimpleGraph.Walk.support_reverse, SimpleGraph.Walk.support_take]
+    have hTnd : (p.support.take (i + 1)).Nodup := nodup_take' _ _ hpn
+    have hTlen : (p.support.take (i + 1)).length = i + 1 := by
+      rw [List.length_take]
+      omega
+    have huT : u ∈ p.support.take (i + 1) := by
+      rw [mem_take_iff_idxOf_lt' hTnd (SimpleGraph.Walk.start_mem_support p)]
+      have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
+        (SimpleGraph.Walk.getVert_support_idxOf p
+          p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
+      have := getVert_inj_of_isPath hp
+        (List.idxOf_lt_length_of_mem p.start_mem_support) (Nat.zero_le _) hxg
+      omega
+    have hv1T : (p.support.take (i + 1)).idxOf (p.getVert 1) = 1 := by
+      refine idxOf_eq_of_getElem' hTnd (by omega) ?_
+      rw [List.getElem_take]
+      have hge : p.support[1] = p.getVert 1 :=
+        (SimpleGraph.Walk.getVert_eq_support_getElem p (by omega)).symm
+      exact hge
+    have hv₂T : p.getVert 1 ∈ p.support.take (i + 1) := by
+      rw [mem_take_iff_idxOf_lt' hTnd
+        (SimpleGraph.Walk.getVert_mem_support p 1)]
+      omega
+    have hv₂W : p.getVert 1 ∈ W.support := by
+      rw [hWsup, List.mem_reverse]
+      exact hv₂T
+    have hWT : u ∉ (W.takeUntil (p.getVert 1) hv₂W).support := by
+      intro hc
+      have hsup := SimpleGraph.Walk.takeUntil_eq_take W (p.getVert 1) hv₂W
+      have hcp : ((W.take (W.support.idxOf (p.getVert 1))).copy rfl
+        (SimpleGraph.Walk.getVert_support_idxOf hv₂W)).support
+          = W.support.take (W.support.idxOf (p.getVert 1) + 1) := by
+        rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_take]
+      rw [hsup, hcp, List.mem_take_iff_getElem] at hc
+      obtain ⟨j, hj, heq⟩ := hc
+      rw [List.getElem?_eq_some_iff] at heq
+      have hWL : W.support.length = i + 1 := by
+        rw [hWsup, List.length_reverse, hTlen]
+      have hju : W.support.idxOf u = j :=
+        idxOf_eq_of_getElem' (List.nodup_reverse.mpr hTnd) (by rw [hWL]; omega)
+          heq.2
+      have huW' : W.support.idxOf u = i := by
+        have hrev := List.idxOf_reverse_mem (p.support.take (i + 1)) hTnd u huT
+        rw [hWsup] at hrev
+        have hu0T : (p.support.take (i + 1)).idxOf u = 0 := by
+          refine idxOf_eq_of_getElem' hTnd (by omega) ?_
+          rw [List.getElem_take]
+          have hge : p.support[0] = p.getVert 0 :=
+            (SimpleGraph.Walk.getVert_eq_support_getElem p
+              (Nat.zero_le _)).symm
+          rw [hge, SimpleGraph.Walk.getVert_zero]
+        rw [hu0T, hTlen] at hrev
+        omega
+      have hv₂W' : W.support.idxOf (p.getVert 1) = i - 1 := by
+        have hrev := List.idxOf_reverse_mem (p.support.take (i + 1)) hTnd
+          (p.getVert 1) hv₂T
+        rw [hWsup] at hrev
+        rw [hv1T, hTlen] at hrev
+        omega
+      subst hju
+      rw [huW', hv₂W'] at hj
+      omega
+    refine ⟨(q.take (m - 1)).append (W.takeUntil (p.getVert 1) hv₂W), ?_⟩
+    intro hu
+    rw [SimpleGraph.Walk.support_append, List.mem_append] at hu
+    rcases hu with h | h
+    · exact hQu h
+    · exact hWT (List.mem_of_mem_tail h)
+  intro X Y hX hY
+  obtain ⟨w₁, h₁⟩ := reach X hX
+  obtain ⟨w₂, h₂⟩ := reach Y hY
+  refine ⟨w₁.append w₂.reverse, ?_⟩
+  intro hu
+  rw [SimpleGraph.Walk.support_append, List.mem_append] at hu
+  rcases hu with h | h
+  · exact h₁ h
+  · exact h₂ (List.mem_reverse.mp (List.mem_of_mem_tail h))
+
+/-- **F10.** Every finite connected graph on at least two vertices has two
+distinct non-cut vertices. -/
+theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
+    [Nontrivial α] :
+    ∃ x y : α, x ≠ y ∧ DeleteConnected G x ∧ DeleteConnected G y := by
+  classical
+  haveI hdec : DecidablePred fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+      q.IsPath → q.length ≤ n := fun _ => Classical.dec _
+  have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
+  obtain ⟨n₀, hn₀, hn₀min⟩ : ∃ n, (∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ n) ∧ ∀ m, m < n →
+      ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ m) :=
+    ⟨Nat.find ⟨Fintype.card α, htop⟩, Nat.find_spec _, Nat.find_min _⟩
+  have hn1 : 1 ≤ n₀ := by
+    by_contra h0
+    have h0' : n₀ = 0 := by omega
+    obtain ⟨x, y, hxy⟩ := exists_ne (Classical.arbitrary (α := α))
+    obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist x y
+    have hqp : q.IsPath := isPath_of_length_eq_dist hconn hq
+    have hd1 : 1 ≤ G.dist x y := by
+      by_contra hd0
+      cases q with
+      | nil => exact hxy rfl
+      | cons h t =>
+        rw [SimpleGraph.Walk.length_cons] at hq
+        omega
+    refine hn₀min 0 h0' x y q hqp ?_
+    rw [hq]
+    omega
+  obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
+      q.length = n₀ := by
+    by_contra hcon
+    push_neg at hcon
+    obtain ⟨x, y, q, hq⟩ := hn₀min (n₀ - 1) (by omega)
+    have := hn₀ x y q hq
+    exact hcon x y q hq (by omega)
+  have hp1 : 1 ≤ p.length := by rw [hplen]; exact hn1
+  have huv : u ≠ v := by
+    intro e
+    subst e
+    exact (SimpleGraph.Walk.not_nil_iff_lt_length.mpr hp1).elim
+      ((SimpleGraph.Walk.IsPath.nil_iff_eq hpp).mpr rfl)
+  have hmax : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ p.length :=
+    fun _ _ q hq => by rw [hplen]; exact hn₀ x y q hq
+  refine ⟨u, v, huv,
+    deleteConnected_of_longest hconn hpp hp1 hmax,
+    deleteConnected_of_longest hconn hpp.reverse
+      (by rw [SimpleGraph.Walk.length_reverse]; exact hp1)
+      (fun x y q hq => by
+        rw [SimpleGraph.Walk.length_reverse]
+        exact hmax x y q hq)⟩
+
+/-! ### F12 -/
+
+/-- **F12.** A connected graph of radius at least two has at least four
+vertices. -/
+theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
+    [Nonempty α] (hr : 2 ≤ G.radius.toNat) : 4 ≤ Fintype.card α := by
+  by_contra hc
+  push_neg at hc
+  -- a vertex of eccentricity ≤ 1 exists, forcing radius ≤ 1
+  have hrad : ∃ c : α, G.eccent c ≤ 1 := by
+    rcases Nat.lt_or_ge (Fintype.card α) 2 with h1 | h2
+    · refine ⟨Classical.arbitrary (α := α), ?_⟩
+      have hsub : Subsingleton α := Fintype.card_le_one_iff_subsingleton.mp h1
+      rw [G.eccent_eq_zero_of_subsingleton _]
+      exact zero_le _
+    · by_cases hdiam : ∀ w : α, ∀ z : α, G.dist w z ≤ 1
+      · have c0 : α := Classical.arbitrary (α := α)
+        refine ⟨c0, (SimpleGraph.eccent_le_iff c0 1).mpr ?_⟩
+        intro z
+        have hco : ((G.dist c0 z : ℕ) : ℕ∞) = G.edist c0 z :=
+          (hconn.preconnected c0 z).coe_dist_eq_edist
+        rw [hco]
+        exact ENat.coe_le_coe.mpr (hdiam c0 z)
+      · push_neg at hdiam
+        obtain ⟨w, x, hx⟩ := hdiam
+        have hx2' : 2 ≤ G.dist w x := by omega
+        obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist w x
+        have hq2 : 2 ≤ q.length := by rw [hq] at hx2'; exact hx2'
+        set c := q.getVert 1 with hcdef
+        have hw0 : q.getVert 0 = w := SimpleGraph.Walk.getVert_zero q
+        have hcwx : c ≠ w := by
+          have hne := SimpleGraph.Walk.getVert_ne_of_length_eq_dist hq
+            (Nat.zero_le _) hq2 (by omega)
+          rw [hw0] at hne
+          exact hne.symm
+        have hcx : c ≠ x :=
+          SimpleGraph.Walk.getVert_ne_of_length_eq_dist hq (by omega)
+            (Nat.zero_le _) (by omega)
+        have haw : G.Adj w c := by
+          have ha := SimpleGraph.Walk.adj_getVert_succ q (by omega)
+          rw [hw0] at ha
+          rw [hcdef] at ha
+          exact ha
+        -- every vertex equals w, x, or c (four distinct points would force
+        -- the cardinality to be at least four)
+        have hcover : ∀ z : α, z = w ∨ z = x ∨ z = c := by
+          intro z
+          by_contra hz
+          push_neg at hz
+          have hcard4 : 4 ≤ Fintype.card α := by
+            have hsub := Finset.card_le_of_subset (s := ({w, x, c, z} : Finset α))
+              (Finset.subset_univ _)
+            have hwxn : w ≠ x := by
+              intro e
+              rw [e, dist_self' hconn x] at hx2'
+              omega
+            have h1 : z ∉ ({w, x, c} : Finset α) := by
+              simp only [Finset.mem_insert, Finset.mem_insert,
+                Finset.mem_singleton, not_or, hz.1, hz.2.1, hz.2.2]
+            have h2 : c ∉ ({w, x} : Finset α) := by simp [hcwx, hcx]
+            have h3 : x ∉ ({w} : Finset α) := by simp [hwxn]
+            rw [Finset.card_insert_of_notMem h1, Finset.card_insert_of_notMem h2,
+              Finset.card_singleton] at hsub
+            omega
+          omega
+        refine ⟨c, (SimpleGraph.eccent_le_iff c 1).mpr ?_⟩
+        intro z
+        have hco : ((G.dist c z : ℕ) : ℕ∞) = G.edist c z :=
+          (hconn.preconnected c z).coe_dist_eq_edist
+        rw [hco]
+        refine ENat.coe_le_coe.mpr ?_
+        rcases hcover z with e | e
+        · have h1 : G.dist c w ≤ 1 := by
+            have hle := SimpleGraph.dist_le
+              (SimpleGraph.Adj.toWalk haw.symm : G.Walk c w)
+            simpa [SimpleGraph.Adj.toWalk] using hle
+          rw [e]; omega
+        · rcases e with e | e
+          · have h1 : G.dist c x = q.length - 1 := by
+              rw [hcdef]
+              exact dist_getVert_end_of_length_eq_dist hq (by omega)
+            rw [e, hq] at h1
+            omega
+          · rw [e, dist_self' hconn c]
+            exact Nat.zero_le _
+  obtain ⟨c, hc1⟩ := hrad
+  have hne : G.radius ≠ ⊤ := by
+    obtain ⟨a, b, hab⟩ := G.exists_edist_eq_radius_of_finite
+    rw [← hab]
+    exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected a b)
+  have hle : (G.radius.toNat : ℕ∞) ≤ 1 := by
+    rw [← ENat.coe_toNat hne]
+    exact le_trans (G.radius_le_eccent (u := c)) hc1
+  have hfin : G.radius.toNat ≤ 1 := ENat.coe_le_coe.mp hle
+  omega
+
+end Graffiti84

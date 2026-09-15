@@ -2,4 +2,5 @@ import Graffiti84.BasicFacts
 import Graffiti84.RootedChung
 import Graffiti84.RadiusCriticalStructure
 import Graffiti84.LeafLemma
+import Graffiti84.EndBlocks
 import Graffiti84.GraphConjecture84

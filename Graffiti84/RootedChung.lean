@@ -455,7 +455,7 @@ theorem isInducedTree_of_walk_chords {G : SimpleGraph α} {x z : α}
       · left; omega
 
 
-private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
+lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
     ∀ (l : List β), l.Nodup → ∀ (x : β), x ∈ l →
       List.idxOf x l.reverse + List.idxOf x l = l.length - 1 := by
   intro l
@@ -491,7 +491,7 @@ private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
         omega
 
 
-private lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
+lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
     ∀ (l : List β), l.Nodup → ∀ (x : β), x ∈ l.tail →
       List.idxOf x l.tail + 1 = List.idxOf x l := by
   intro l
