@@ -563,7 +563,7 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
     · -- x = v0 sits at q-position ≥ 1: contradicts geodesic injectivity
       rw [h0, SimpleGraph.Walk.getVert_zero] at hxg
       rw [← hxg] at hxgq
-      have hne := getVert_ne_of_length_eq_dist hq hj1 (Nat.zero_le q.length)
+      have hne := getVert_ne_of_length_eq_dist hq hjle (Nat.zero_le q.length)
         (by omega)
       rw [SimpleGraph.Walk.getVert_zero] at hne
       exact hne hxgq
@@ -687,8 +687,8 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
   · rw [List.toFinset_card_of_nodup hLnd, SimpleGraph.Walk.length_support,
       hQdef, SimpleGraph.Walk.length_append,
       SimpleGraph.Walk.length_reverse]
-    have hv₂₀ : G.dist v₀ v₂ = 2 := by
-      rw [← hv₂]
+    have hv₂₀ : G.dist v₂ v₀ = 2 := by
+      rw [SimpleGraph.dist_comm]
       exact dist_getVert_of_length_eq_dist hpgeo 2 h2
     have ht := hconn.dist_triangle (u := v₂) (v := v₀) (w := w)
     rw [hv₂₀, hq] at ht
