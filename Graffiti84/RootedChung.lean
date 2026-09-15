@@ -691,7 +691,7 @@ theorem rooted_chung_flat {G : SimpleGraph α} (hconn : G.Connected) {a : α}
       exact dist_getVert_of_length_eq_dist hpgeo 2 h2
     have ht := hconn.dist_triangle (u := v₂) (v := v₀) (w := w)
     rw [hv₂₀, ← hq] at ht
-    have horder : r ≤ q.length + 2 := by
+    have horder : r ≤ 2 + q.length := by
       calc r = p.length := hp.symm
         _ ≤ G.dist v₂ w := hpw
         _ ≤ 2 + q.length := ht
