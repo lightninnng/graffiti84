@@ -491,18 +491,21 @@ private lemma idxOf_reverse_mem {β : Type*} [BEq β] [LawfulBEq β] :
 
 
 private lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
-    ∀ (l : List β) (x : β), x ∈ l.tail →
+    ∀ (l : List β), l.Nodup → ∀ (x : β), x ∈ l.tail →
       List.idxOf x l.tail + 1 = List.idxOf x l := by
   intro l
   induction l with
-  | nil => intro x hx; simp at hx
+  | nil => intro _ x hx; simp at hx
   | cons h r ih =>
-      intro x hx
+      intro hnd x hx
+      obtain ⟨hnhr, hnr⟩ := List.nodup_cons.mp hnd
       have hne : x ≠ h := by
         intro e
-        subst e
-        exact absurd hx (by simp)
-      rw [List.idxOf_cons_ne r (fun e => hne e.symm)]
+        rw [e] at hx
+        exact hnhr (by simpa using hx)
+      have hstep : List.idxOf x (h :: r) = (List.idxOf x r) + 1 :=
+        List.idxOf_cons_ne r (fun e => hne e.symm)
+      rw [hstep]
       rfl
 
 end Graffiti84
