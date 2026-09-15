@@ -498,14 +498,11 @@ private lemma idxOf_tail_succ {β : Type*} [BEq β] [LawfulBEq β] :
   | nil => intro x hx; simp at hx
   | cons h r ih =>
       intro x hx
-      have hxr : x ∈ r := by simpa using hx
       have hne : x ≠ h := by
         intro e
         subst e
-        exact absurd hxr (by simp)
-      have hstep : List.idxOf x (h :: r) = (List.idxOf x r) + 1 :=
-        List.idxOf_cons_ne r (fun e => hne e.symm)
-      rw [hstep]
-      exact ih x hxr
+        exact absurd hx (by simp)
+      rw [List.idxOf_cons_ne r (fun e => hne e.symm)]
+      rfl
 
 end Graffiti84
