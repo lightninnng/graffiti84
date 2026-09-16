@@ -645,13 +645,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       have hpos : 0 < G.degree v :=
         (SimpleGraph.degree_pos_iff_mem_support G v).mpr hm
       omega
-    obtain ⟨z, hzv⟩ := exists_ne v
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
     refine hsup ?_
     cases w with
     | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzv
     | cons h t' =>
-        exact (SimpleGraph.mem_support_iff G).mpr ⟨_, h⟩
+        exact (SimpleGraph.degree_pos_iff_exists_adj.mpr ⟨_, h⟩).ne' hzv
   have hdeg2 : 2 ≤ G.degree v := by omega
   -- W := the non-cut vertices
   set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
@@ -693,15 +692,18 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       refine (hSiff b).mpr ⟨?_, ?_⟩
       · rw [hbpen]
         exact hpenW
-      · refine ⟨p.append (SimpleGraph.Adj.toWalk hbu), ?_⟩
+      · refine ⟨p.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
+          ?_⟩
         intro t ht
-        rw [SimpleGraph.Walk.support_append, List.mem_append] at ht
+        rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk,
+          List.mem_append] at ht
         rcases ht with h | h
-        · exact hp h
-        · rw [SimpleGraph.Adj.toWalk] at h
-          rcases List.mem_cons.mp h with e | e
+        · exact hp t h
+        · rcases List.mem_cons.mp h with e | e
           · exact e ▸ huW
-          · exact e.symm ▸ hpenW⟩
+          · have htb : t = b := List.mem_singleton.mp e
+            rw [htb, ← hbpen]
+            exact hpenW
     · -- deg u ≥ 2: F8 gives a UEP centre, and 3.2 makes b a non-cut vertex
       have hncu : DeleteConnected G u := hWmem u |>.mp huW
       have hdeg0 : G.degree u ≠ 0 := by
@@ -710,13 +712,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
           have hpos : 0 < G.degree u :=
             (SimpleGraph.degree_pos_iff_mem_support G u).mpr hm
           omega
-        obtain ⟨z, hzu⟩ := exists_ne u
         obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
         refine hsup ?_
         cases w with
         | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzu
         | cons h t' =>
-            exact (SimpleGraph.mem_support_iff G).mpr ⟨_, h⟩
+            exact (SimpleGraph.degree_pos_iff_exists_adj.mpr ⟨_, h⟩).ne' hzu
       have hdeg2u : 2 ≤ G.degree u := by omega
       have h2 : 2 ≤ Fintype.card α := by
         by_contra h
@@ -729,15 +730,18 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         (deleteConnected_of_isUniqueEccentricPoint_neighbor hconn huepu
           hdeg2u hbu).2
       refine ⟨hWmem b |>.mpr hbnc, ?_⟩
-      refine ⟨hcu.append (SimpleGraph.Adj.toWalk hbu), ?_⟩
+      refine ⟨hcu.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
+        ?_⟩
       intro t ht
-      rw [SimpleGraph.Walk.support_append, List.mem_append] at ht
+      rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk,
+        List.mem_append] at ht
       rcases ht with h | h
-      · exact hp h
-      · rw [SimpleGraph.Adj.toWalk] at h
-        rcases List.mem_cons.mp h with e | e
+      · exact hp t h
+      · rcases List.mem_cons.mp h with e | e
         · exact e ▸ huW
-        · exact e.symm ▸ hWmem b |>.mpr hbnc
+        · have htb : t = b := List.mem_singleton.mp e
+          rw [htb]
+          exact hWmem b |>.mpr hbnc
   have hvS : v ∈ S := by
     rw [hSdef]
     simp only [Finset.mem_filter, Finset.mem_univ]
