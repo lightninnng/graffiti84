@@ -514,24 +514,21 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     (hconn : G.Connected) {c v : α} (huep : IsUniqueEccentricPoint G c v)
     (hdeg : 2 ≤ G.degree v) {x : α} (hxv : G.Adj x v) :
     G.dist c x + 1 = (G.eccent c).toNat ∧ DeleteConnected G x := by
-  set r := (G.eccent c).toNat with hrdef
   have hxvne : x ≠ v := G.ne_of_adj hxv
   -- (a) the distance statement
   have htr : G.dist c v ≤ G.dist c x + 1 := by
     have h1 := hconn.dist_triangle (u := c) (v := x) (w := v)
     have hx1 : G.dist x v ≤ 1 := dist_le_one_of_adj hxv
     omega
-  have hdist := huep.2 x hxvne
-  have hda : G.dist c x + 1 = r := by omega
+  have hlt := huep.2 x hxvne
+  have hda : G.dist c x + 1 = (G.eccent c).toNat := by omega
   refine ⟨hda, ?_⟩
   -- (b) x is not a cut vertex
   -- a second neighbour y of v with y ≠ x
-  have hxnb : x ∈ G.neighborFinset v := SimpleGraph.mem_neighborFinset.mpr
-    (G.symm hxv)
   obtain ⟨y, hyv, hyx⟩ : ∃ y, G.Adj y v ∧ y ≠ x := by
     by_contra hcon
     push_neg at hcon
-    have hsub : G.neighborFinset v ⊆ Finset.singleton x := by
+    have hsub : G.neighborFinset v ⊆ {x} := by
       intro z hz
       have hz2 := hcon z (SimpleGraph.mem_neighborFinset.mp hz)
       rw [hz2]
@@ -539,19 +536,19 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     have h1 : G.degree v ≤ 1 := by
       have hcard : (G.neighborFinset v).card ≤ ({x} : Finset α).card :=
         Finset.card_le_card hsub
-      rw [SimpleGraph.degree]
+      have hsingle : ({x} : Finset α).card = 1 := rfl
+      show (G.neighborFinset v).card ≤ 1
       omega
     omega
   have hyne : y ≠ v := G.ne_of_adj hyv
-  -- x ≠ c: otherwise the second neighbour y would sit strictly between
-  -- eccentricity bounds
+  -- x ≠ c: otherwise the second neighbour y would violate the UEP bounds
   have hxc : x ≠ c := by
     intro e
+    have hyc : y ≠ c := fun hcy => hyx (by rw [e, ← hcy])
     have hv1 : G.dist c v ≤ 1 := by
       rw [← e]
       exact dist_le_one_of_adj hxv
-    have hdy1 : 1 ≤ G.dist c y := one_le_dist_of_ne hconn
-      (fun hcy => hyx (by rw [hcy, e]))
+    have hdy1 : 1 ≤ G.dist c y := one_le_dist_of_ne hconn hyc
     have hlt2 := huep.2 y hyne
     omega
   -- every vertex other than x reaches c avoiding x
