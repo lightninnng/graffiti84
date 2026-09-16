@@ -412,7 +412,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
           rw [← hcdef, SimpleGraph.Walk.getVert_length] at hne
           exact hne
         have haw : G.Adj w c := by
-          have ha := SimpleGraph.Walk.adj_getVert_succ q (by omega)
+          have ha := SimpleGraph.Walk.adj_getVert_succ q (i := 0) (by omega)
           rw [hw0] at ha
           rw [hcdef] at ha
           exact ha
@@ -449,6 +449,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
               exact hwxn hx3.symm
             rw [Finset.card_insert_of_notMem h1, Finset.card_insert_of_notMem h2,
               Finset.card_insert_of_notMem h3, Finset.card_singleton] at hsub
+            have huncard : Finset.univ.card = Fintype.card α := rfl
             omega
           omega
         refine ⟨c, (SimpleGraph.eccent_le_iff c 1).mpr ?_⟩
@@ -468,7 +469,9 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
               rw [hcdef]
               exact dist_getVert_end_of_length_eq_dist hq (by omega)
             have hL2 : q.length ≤ 2 := by
-              have := hqp.length_lt
+              obtain ⟨q', hq'⟩ := hconn.exists_walk_length_eq_dist w x
+              have hqp' : q'.IsPath := isPath_of_length_eq_dist hconn hq'
+              have := hqp'.length_lt
               omega
             rw [e]
             omega
