@@ -646,12 +646,15 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         (SimpleGraph.degree_pos_iff_mem_support G v).mpr hm
       omega
     obtain ⟨z, hzv⟩ := exists_ne v
+    obtain ⟨z, hzv⟩ := exists_ne v
+    have hdist : 1 ≤ G.dist v z := one_le_dist_of_ne hconn (Ne.symm hzv)
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
     refine hsup ?_
     cases w with
-    | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzv
+    | nil => omega
     | cons h t' =>
-        exact (G.degree_pos_iff_exists_adj v |>.mpr ⟨_, h⟩).ne' hzv
+        refine (SimpleGraph.degree_pos_iff_mem_support G v).2 ?_
+        exact G.degree_pos_iff_exists_adj.mpr ⟨_, h⟩
   have hdeg2 : 2 ≤ G.degree v := by omega
   -- W := the non-cut vertices
   set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
@@ -702,7 +705,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         · rcases List.mem_cons.mp (List.mem_of_mem_tail h) with e | e
           · exact e.trans huW
           · have htb : t = b := List.mem_singleton.mp e
-            rw [htb, ← hbpen]
+            rw [htb, hbpen]
             exact hpenW
     · -- deg u ≥ 2: F8 gives a UEP centre, and 3.2 makes b a non-cut vertex
       have hncu : DeleteConnected G u := hWmem u |>.mp huW
@@ -712,12 +715,15 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
           have hpos : 0 < G.degree u :=
             (SimpleGraph.degree_pos_iff_mem_support G u).mpr hm
           omega
+        obtain ⟨z, hzu⟩ := exists_ne u
+        have hdist : 1 ≤ G.dist u z := one_le_dist_of_ne hconn (Ne.symm hzu)
         obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
         refine hsup ?_
         cases w with
-        | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzu
+        | nil => omega
         | cons h t' =>
-            exact (G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩).ne' hzu
+            refine (SimpleGraph.degree_pos_iff_mem_support G u).2 ?_
+            exact G.degree_pos_iff_exists_adj.mpr ⟨_, h⟩
       have hdeg2u : 2 ≤ G.degree u := by omega
       have h2 : 2 ≤ Fintype.card α := by
         by_contra h
