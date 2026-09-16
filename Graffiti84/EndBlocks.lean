@@ -514,13 +514,12 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     (hconn : G.Connected) {c v : α} (huep : IsUniqueEccentricPoint G c v)
     (hdeg : 2 ≤ G.degree v) {x : α} (hxv : G.Adj x v) :
     G.dist c x + 1 = (G.eccent c).toNat ∧ DeleteConnected G x := by
-  have hd1 := dist_le_one_of_adj (G := G)
   set r := (G.eccent c).toNat with hrdef
   have hxvne : x ≠ v := G.ne_of_adj hxv
   -- (a) the distance statement
   have htr : G.dist c v ≤ G.dist c x + 1 := by
     have h1 := hconn.dist_triangle (u := c) (v := x) (w := v)
-    have hx1 : G.dist x v ≤ 1 := hd1 _ _ hxv
+    have hx1 : G.dist x v ≤ 1 := dist_le_one_of_adj hxv
     omega
   have hdist := huep.2 x hxvne
   have hda : G.dist c x + 1 = r := by omega
@@ -550,7 +549,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     intro e
     have hv1 : G.dist c v ≤ 1 := by
       rw [← e]
-      exact hd1 _ _ hxv
+      exact dist_le_one_of_adj hxv
     have hdy1 : 1 ≤ G.dist c y := one_le_dist_of_ne hconn
       (fun hcy => hyx (by rw [hcy, e]))
     have hlt2 := huep.2 y hyne
