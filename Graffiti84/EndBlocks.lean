@@ -619,17 +619,17 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
 /-! ### 3.5: the closure argument (Fajtlowicz) -/
 
 /-- In a closed vertex set, every walk starting inside ends inside. -/
-private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α}
-    {a b : α} (hS : ∀ u z, u ∈ S → G.Adj u z → z ∈ S)
-    (p : G.Walk a b) (ha : a ∈ S) : b ∈ S := by
+private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α} :
+    ∀ (a b : α), (∀ u z, u ∈ S → G.Adj u z → z ∈ S) → G.Walk a b → a ∈ S → b ∈ S := by
+  intro a b hS p
   induction p with
-  | nil => exact ha
-  | cons h t ih => exact ih (hS a _ ha h)
+  | nil => exact fun _ ha => ha
+  | cons h t ih => exact fun ha => ih (hS a _ ha h)
 
 /-- **3.5 (Fajtlowicz).** In a vrd graph with a cut vertex, every non-cut
 vertex is a leaf. -/
 theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
-    (hconn : G.Connected)
+    (hconn : G.Connected) [Nonempty α]
     (hmono : ∀ z : α, DeleteConnected G z →
       radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
     (hac : ∃ a, IsCut G a) {v : α} (hv : DeleteConnected G v) :
@@ -639,7 +639,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have hdeg0 : G.degree v ≠ 0 := by
     intro h0
     have hsup : v ∉ G.support := fun hm => by
-      have hpos : 0 < G.degree v := SimpleGraph.degree_pos_iff_mem_support.mpr hm
+      have hpos : 0 < G.degree v :=
+        (SimpleGraph.degree_pos_iff_mem_support v).mpr hm
       omega
     have a1 : α := Classical.arbitrary (α := α)
     obtain ⟨z, hzv⟩ := exists_ne v
@@ -655,12 +656,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     obtain ⟨a, ha⟩ := hac
     exact ha (fun X Y hX hY => (hY (Subsingleton.elim Y a)).elim)
   -- W := the non-cut vertices
-  set W : Finset α := Finset.univ.filter (fun z => ¬ IsCut G z) with hWdef
-  have hWmem : ∀ z, z ∈ W ↔ ¬ IsCut G z := by
+  set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
+    with hWdef
+  have hWmem : ∀ z, z ∈ W ↔ DeleteConnected G z := by
     intro z
     rw [hWdef]
     simp [Finset.mem_filter, Finset.mem_univ]
-  have hWdel : ∀ z ∈ W, DeleteConnected G z := fun z hz => hWmem z |>.mp hz
   -- S := the W-component of v
   set S : Finset α := Finset.univ.filter
     (fun z => z ∈ W ∧ ConnectsWithin G W v z) with hSdef
@@ -670,7 +671,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     simp [Finset.mem_filter, Finset.mem_univ]
   have hstep : ∀ z ∈ S, ∀ b, G.Adj b z → b ∈ S := by
     intro u hu b hbu
-    obtain ⟨huW, hcu⟩ := hSiff u hu
+    obtain ⟨huW, hcu⟩ := (hSiff u).mp hu
     by_cases hleaf : G.degree u = 1
     · -- u is a leaf: b is its unique neighbour, the penultimate vertex of
       -- the witnessing v -> u walk
@@ -704,12 +705,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     · -- deg u ≥ 2: F8 gives a UEP centre, and 3.2 makes b a non-cut vertex
       have hncu : DeleteConnected G u := by
         by_contra hcut
-        exact huW hcut
+        exact (hWmem u |>.mp huW) hcut
       have hdeg0 : G.degree u ≠ 0 := by
         intro h0
         have hsup : u ∉ G.support := fun hm => by
           have hpos : 0 < G.degree u :=
-            SimpleGraph.degree_pos_iff_mem_support.mpr hm
+            (SimpleGraph.degree_pos_iff_mem_support u).mpr hm
           omega
         have a1 : α := Classical.arbitrary (α := α)
         obtain ⟨z, hzu⟩ := exists_ne u
@@ -748,15 +749,16 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     hstep u hu z huz
   -- the cut vertex a is neither in W nor in S
   obtain ⟨a, ha⟩ := hac
-  have haW : a ∉ W := fun hm => ha (hWmem a |>.mp hm)
+  have haW : a ∉ W := fun hm => ha ((hWmem a).mp hm)
   have haS : a ∉ S := fun hs => haW ((hSiff a).mp hs).1
   obtain ⟨b, hbS⟩ : ∃ b, b ∉ S := ⟨a, haS⟩
   obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v b
-  exact hbS (walk_end_mem_of_closed hclosed w hvS)
+  exact hbS (walk_end_mem_of_closed v b hclosed w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
 leaves. -/
 theorem exists_two_isLeaf_of_hasCut {G : SimpleGraph α} (hconn : G.Connected)
+    [Nonempty α]
     (hmono : ∀ z : α, DeleteConnected G z →
       radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
     (hac : ∃ a, IsCut G a) :
