@@ -625,9 +625,9 @@ private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α}
   intro a b p
   induction p with
   | nil => intro ha; exact ha
-  | cons h t ih =>
+  | @cons u v w h t ih =>
       intro ha
-      exact ih (hS a _ ha h)
+      exact ih (hS u v ha h)
 
 /-- **3.5 (Fajtlowicz).** In a vrd graph with a cut vertex, every non-cut
 vertex is a leaf. -/
@@ -639,6 +639,11 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     G.degree v = 1 := by
   classical
   by_contra hdeg
+  haveI : Nontrivial α := by
+    by_contra hnt
+    haveI : Subsingleton α := not_nontrivial_iff_subsingleton.mp hnt
+    obtain ⟨a, ha⟩ := hac
+    exact ha (fun X Y hX hY => (hY (Subsingleton.elim Y a)).elim)
   have hdeg0 : G.degree v ≠ 0 := by
     intro h0
     have hsup : v ∉ G.support := fun hm => by
@@ -652,11 +657,6 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzv
     | cons h t' => exact SimpleGraph.Walk.start_mem_support _
   have hdeg2 : 2 ≤ G.degree v := by omega
-  haveI : Nontrivial α := by
-    by_contra hnt
-    haveI : Subsingleton α := not_nontrivial_iff_subsingleton.mp hnt
-    obtain ⟨a, ha⟩ := hac
-    exact ha (fun X Y hX hY => (hY (Subsingleton.elim Y a)).elim)
   -- W := the non-cut vertices
   set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
     with hWdef
@@ -685,13 +685,15 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       have hpne : ¬p.Nil := by
         cases p with
         | nil => exact fun hnil => huv rfl
-        | cons h t => exact not_nil_cons
+        | cons h t => exact SimpleGraph.Walk.not_nil_cons
       have hpen := SimpleGraph.Walk.adj_penultimate hpne
       have hpenW : p.penultimate ∈ W := by
         rw [SimpleGraph.Walk.penultimate]
-        exact hp (SimpleGraph.Walk.getVert_mem_support p (p.length - 1))
+        exact hp (p.getVert (p.length - 1))
+          (SimpleGraph.Walk.getVert_mem_support p (p.length - 1))
       have hbpen : b = p.penultimate :=
-        adj_eq_of_degree_eq_one hleaf (SimpleGraph.Adj.symm hpen) hbu
+        (adj_eq_of_degree_eq_one hleaf (SimpleGraph.Adj.symm hpen)
+          (SimpleGraph.Adj.symm hbu)).symm
       rw [hbpen]
       refine ⟨hpenW, ?_⟩
       exact ⟨p.append (SimpleGraph.Adj.toWalk hbu), by
