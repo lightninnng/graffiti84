@@ -105,13 +105,15 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
       rw [e] at hxps
       exact hys hxps
     · have hxu : x = u := List.mem_singleton.mp e
-      have hu0 : p.support.idxOf x = 0 := by
-        have hxg : p.getVert (p.support.idxOf x) = p.getVert 0 :=
-          (SimpleGraph.Walk.getVert_support_idxOf p hb).trans
-            (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hb)
-          (Nat.zero_le _) hxg
-      have hts := idxOf_tail_succ p.support hpn x hb
+      intro heq
+      rw [← heq, ← hxu] at hb
+      have hu0 : p.support.idxOf u = 0 := by
+        have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
+          (SimpleGraph.Walk.getVert_support_idxOf p
+            p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
+        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem
+          p.start_mem_support) (Nat.zero_le _) hxg
+      have hts := idxOf_tail_succ p.support hpn u hb
       omega
   have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
     rw [SimpleGraph.Walk.length_append]
@@ -247,8 +249,11 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       obtain ⟨j, hj, heq⟩ := hc
       have hWL : W.support.length = i + 1 := by
         rw [hWsup, List.length_reverse, hTlen]
+      have hWnd : W.support.Nodup := by
+        rw [hWsup]
+        exact List.nodup_reverse.mpr hTnd
       have huW' : W.support.idxOf u = i := by
-        have hrev := List.idxOf_reverse_mem (p.support.take (i + 1)) hTnd u huT
+        have hrev := idxOf_reverse_mem (p.support.take (i + 1)) hTnd u huT
         rw [hWsup] at hrev
         have hu0T : (p.support.take (i + 1)).idxOf u = 0 := by
           refine idxOf_eq_of_getElem' hTnd (by omega) ?_
@@ -260,7 +265,7 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [hu0T, hTlen] at hrev
         omega
       have hv₂W' : W.support.idxOf (p.getVert 1) = i - 1 := by
-        have hrev := List.idxOf_reverse_mem (p.support.take (i + 1)) hTnd
+        have hrev := idxOf_reverse_mem (p.support.take (i + 1)) hTnd
           (p.getVert 1) hv₂T
         rw [hWsup] at hrev
         rw [hv1T, hTlen] at hrev
@@ -270,7 +275,7 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [hv₂W'] at hj
         omega
       have hju : W.support.idxOf u = j :=
-        idxOf_eq_of_getElem' (List.nodup_reverse.mpr hTnd) hjl heq
+        idxOf_eq_of_getElem' (l := W.support) hWnd hjl heq
       subst hju
       rw [huW', hv₂W'] at hj
       omega
@@ -328,9 +333,10 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     | nil => rfl
     | cons h t' => rw [SimpleGraph.Walk.length_cons] at ht; omega
   have hnmin : ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath →
-      q.length ≤ Nat.find hex - 1) :=
-    Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-      q.IsPath → q.length ≤ n) hex (Nat.find hex - 1) (by omega)
+      q.length ≤ Nat.find hex - 1) := by
+    have hlt : Nat.find hex - 1 < Nat.find hex := by omega
+    exact Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+      q.IsPath → q.length ≤ n) hex _ hlt
   obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
       q.length = Nat.find hex := by
     by_contra hcon
