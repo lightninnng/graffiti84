@@ -112,8 +112,9 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
         have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
           (SimpleGraph.Walk.getVert_support_idxOf p
             p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem
-          p.start_mem_support) (Nat.zero_le _) hxg
+        exact getVert_inj_of_isPath hp
+          (by have := List.idxOf_lt_length_of_mem p.start_mem_support; omega)
+          (Nat.zero_le _) hxg
       have hts := idxOf_tail_succ p.support hpn u hb
       omega
   have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
@@ -377,7 +378,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
   -- a vertex of eccentricity ≤ 1 exists, forcing radius ≤ 1
   have hrad : ∃ c : α, G.eccent c ≤ 1 := by
     rcases Nat.lt_or_ge (Fintype.card α) 2 with h1 | h2
-    · refine ⟨Classical.arbitrary (α := α), ?_⟩
+    · have c : α := Classical.arbitrary (α := α)
       haveI hsub : Subsingleton α :=
         Fintype.card_le_one_iff_subsingleton.mp (by omega)
       rw [G.eccent_eq_zero_of_subsingleton c]
@@ -398,12 +399,15 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
         set c := q.getVert 1 with hcdef
         have hw0 : q.getVert 0 = w := SimpleGraph.Walk.getVert_zero q
         have hcwx : c ≠ w := by
-          have hne := getVert_ne_of_length_eq_dist hq (Nat.zero_le _) hq2
-            (by omega)
-          rw [hw0] at hne
+          have hne := getVert_ne_of_length_eq_dist hq (Nat.zero_le _)
+            (by omega) (by omega)
+          rw [hw0, hcdef] at hne
           exact hne.symm
-        have hcx : c ≠ x :=
-          getVert_ne_of_length_eq_dist hq (by omega) (Nat.zero_le _) (by omega)
+        have hcx : c ≠ x := by
+          have hne := getVert_ne_of_length_eq_dist hq (by omega)
+            (le_of_eq rfl) (by omega)
+          rw [hcdef, SimpleGraph.Walk.getVert_length] at hne
+          exact hne
         have haw : G.Adj w c := by
           have ha := SimpleGraph.Walk.adj_getVert_succ q (by omega)
           rw [hw0] at ha
@@ -456,11 +460,11 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
     obtain ⟨a, b, hab⟩ := G.exists_edist_eq_radius_of_finite
     rw [← hab]
     exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected a b)
-  have hle : (G.radius.toNat : ℕ∞) ≤ 1 := by
-    have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
-    calc (G.radius.toNat : ℕ∞) = G.radius := hcoe.symm
-      _ ≤ G.eccent c := G.radius_le_eccent
-      _ ≤ 1 := hc1
+    have hle : (G.radius.toNat : ℕ∞) ≤ 1 := by
+      have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
+      calc (G.radius.toNat : ℕ∞) = G.radius := hcoe
+        _ ≤ G.eccent c := G.radius_le_eccent
+        _ ≤ 1 := hc1
   have hfin : G.radius.toNat ≤ 1 := ENat.coe_le_coe.mp hle
   omega
 
