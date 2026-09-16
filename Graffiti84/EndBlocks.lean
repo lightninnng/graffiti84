@@ -105,15 +105,13 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
       rw [e] at hxps
       exact hys hxps
     · have hxu : x = u := List.mem_singleton.mp e
-      subst hxu
-      have hu0 : p.support.idxOf u = 0 := by
-        have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
-          (SimpleGraph.Walk.getVert_support_idxOf p
-            p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp
-          (by have := List.idxOf_lt_length_of_mem p.start_mem_support; omega)
+      have hu0 : p.support.idxOf x = 0 := by
+        have hxg : p.getVert (p.support.idxOf x) = p.getVert 0 :=
+          (SimpleGraph.Walk.getVert_support_idxOf p hb).trans
+            (SimpleGraph.Walk.getVert_zero p).symm
+        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hb)
           (Nat.zero_le _) hxg
-      have hts := idxOf_tail_succ p.support hpn u hb
+      have hts := idxOf_tail_succ p.support hpn x hb
       omega
   have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
     rw [SimpleGraph.Walk.length_append]
@@ -242,7 +240,7 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       intro hc
       have hsup := SimpleGraph.Walk.takeUntil_eq_take W hv₂W
       have hcp : ((W.take (W.support.idxOf (p.getVert 1))).copy rfl
-        (SimpleGraph.Walk.getVert_support_idxOf hv₂W)).support
+        (SimpleGraph.Walk.getVert_support_idxOf W hv₂W)).support
           = W.support.take (W.support.idxOf (p.getVert 1) + 1) := by
         rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_take]
       rw [hsup, hcp, List.mem_take_iff_getElem] at hc
@@ -311,8 +309,10 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
         q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
     have hex : ∃ n, ∀ (x y : α) (q : G.Walk x y), q.IsPath →
         q.length ≤ n := ⟨Fintype.card α, htop⟩
-    have hsp := Nat.find_spec (h := hex)
-    have hmn := Nat.find_min (h := hex)
+    have hsp := Nat.find_spec (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+        q.IsPath → q.length ≤ n) hex
+    have hmn := Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+        q.IsPath → q.length ≤ n) hex
     exact ⟨Nat.find hex, hsp, hmn⟩
   have hn1 : 1 ≤ n₀ := by
     by_contra h0
@@ -323,7 +323,7 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     have hqp : q.IsPath := isPath_of_length_eq_dist hconn hq
     refine hxy ?_
     have hle := hn₀ x a0 q hqp
-    rw [← hq] at hle
+    rw [hq, h0'] at hle
     have hdeq : G.dist x a0 = 0 := by omega
     obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist x a0
     rw [hdeq] at ht
@@ -339,7 +339,7 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
       have hle := hn₀ x y q hq
       have hne := hcon x y q hq
       omega
-    exact hn₀min (n₀ - 1) (by omega) hnm u v p hpp (by omega)
+    exact absurd hnm (hn₀min (n₀ - 1) (by omega))
   have hp1 : 1 ≤ p.length := by rw [hplen]; exact hn1
   have huv : u ≠ v := by
     intro e
