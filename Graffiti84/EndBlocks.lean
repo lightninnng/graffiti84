@@ -619,12 +619,15 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
 /-! ### 3.5: the closure argument (Fajtlowicz) -/
 
 /-- In a closed vertex set, every walk starting inside ends inside. -/
-private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α} :
-    ∀ (a b : α), (∀ u z, u ∈ S → G.Adj u z → z ∈ S) → G.Walk a b → a ∈ S → b ∈ S := by
-  intro a b hS p
+private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α}
+    (hS : ∀ u z, u ∈ S → G.Adj u z → z ∈ S) :
+    ∀ (a b : α) (p : G.Walk a b), a ∈ S → b ∈ S := by
+  intro a b p
   induction p with
-  | nil => exact fun _ ha => ha
-  | cons h t ih => exact fun ha => ih (hS a _ ha h)
+  | nil => intro ha; exact ha
+  | cons h t ih =>
+      intro ha
+      exact ih (hS a _ ha h)
 
 /-- **3.5 (Fajtlowicz).** In a vrd graph with a cut vertex, every non-cut
 vertex is a leaf. -/
@@ -640,9 +643,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     intro h0
     have hsup : v ∉ G.support := fun hm => by
       have hpos : 0 < G.degree v :=
-        (SimpleGraph.degree_pos_iff_mem_support v).mpr hm
+        (SimpleGraph.degree_pos_iff_mem_support G v).mpr hm
       omega
-    have a1 : α := Classical.arbitrary (α := α)
     obtain ⟨z, hzv⟩ := exists_ne v
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
     refine hsup ?_
@@ -682,13 +684,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       obtain ⟨p, hp⟩ := hcu
       have hpne : ¬p.Nil := by
         cases p with
-        | nil => exact huv rfl
-        | cons h t => exact fun hnil => hnil
+        | nil => exact fun hnil => huv rfl
+        | cons h t => exact not_nil_cons
       have hpen := SimpleGraph.Walk.adj_penultimate hpne
       have hpenW : p.penultimate ∈ W := by
-        refine hp ?_
         rw [SimpleGraph.Walk.penultimate]
-        exact SimpleGraph.Walk.getVert_mem_support p (p.length - 1)
+        exact hp (SimpleGraph.Walk.getVert_mem_support p (p.length - 1))
       have hbpen : b = p.penultimate :=
         adj_eq_of_degree_eq_one hleaf (SimpleGraph.Adj.symm hpen) hbu
       rw [hbpen]
@@ -710,9 +711,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         intro h0
         have hsup : u ∉ G.support := fun hm => by
           have hpos : 0 < G.degree u :=
-            (SimpleGraph.degree_pos_iff_mem_support u).mpr hm
+            (SimpleGraph.degree_pos_iff_mem_support G u).mpr hm
           omega
-        have a1 : α := Classical.arbitrary (α := α)
         obtain ⟨z, hzu⟩ := exists_ne u
         obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
         refine hsup ?_
@@ -753,7 +753,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have haS : a ∉ S := fun hs => haW ((hSiff a).mp hs).1
   obtain ⟨b, hbS⟩ : ∃ b, b ∉ S := ⟨a, haS⟩
   obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v b
-  exact hbS (walk_end_mem_of_closed v b hclosed w hvS)
+  exact hbS (walk_end_mem_of_closed hS v b w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
 leaves. -/
