@@ -379,6 +379,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
   have hrad : ∃ c : α, G.eccent c ≤ 1 := by
     rcases Nat.lt_or_ge (Fintype.card α) 2 with h1 | h2
     · have c : α := Classical.arbitrary (α := α)
+      refine ⟨c, ?_⟩
       haveI hsub : Subsingleton α :=
         Fintype.card_le_one_iff_subsingleton.mp (by omega)
       rw [G.eccent_eq_zero_of_subsingleton c]
@@ -399,13 +400,13 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
         set c := q.getVert 1 with hcdef
         have hw0 : q.getVert 0 = w := SimpleGraph.Walk.getVert_zero q
         have hcwx : c ≠ w := by
-          have hne := getVert_ne_of_length_eq_dist hq (Nat.zero_le _)
-            (by omega) (by omega)
+          have hne := getVert_ne_of_length_eq_dist hq (i := 0) (j := 1)
+            (Nat.zero_le _) (by omega) (by omega)
           rw [hw0, hcdef] at hne
           exact hne.symm
         have hcx : c ≠ x := by
-          have hne := getVert_ne_of_length_eq_dist hq (by omega)
-            (le_of_eq rfl) (by omega)
+          have hne := getVert_ne_of_length_eq_dist hq (i := 1)
+            (j := q.length) (by omega) (le_of_eq rfl) (by omega)
           rw [hcdef, SimpleGraph.Walk.getVert_length] at hne
           exact hne
         have haw : G.Adj w c := by
