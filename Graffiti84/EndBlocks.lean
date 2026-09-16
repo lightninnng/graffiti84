@@ -645,12 +645,13 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       have hpos : 0 < G.degree v :=
         (SimpleGraph.degree_pos_iff_mem_support G v).mpr hm
       omega
+    obtain ⟨z, hzv⟩ := exists_ne v
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
     refine hsup ?_
     cases w with
     | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzv
     | cons h t' =>
-        exact (SimpleGraph.degree_pos_iff_exists_adj.mpr ⟨_, h⟩).ne' hzv
+        exact (G.degree_pos_iff_exists_adj v |>.mpr ⟨_, h⟩).ne' hzv
   have hdeg2 : 2 ≤ G.degree v := by omega
   -- W := the non-cut vertices
   set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
@@ -695,12 +696,11 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       · refine ⟨p.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
           ?_⟩
         intro t ht
-        rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk,
-          List.mem_append] at ht
+        rw [SimpleGraph.Walk.support_append, List.mem_append] at ht
         rcases ht with h | h
         · exact hp t h
-        · rcases List.mem_cons.mp h with e | e
-          · exact e ▸ huW
+        · rcases List.mem_cons.mp (List.mem_of_mem_tail h) with e | e
+          · exact e.trans huW
           · have htb : t = b := List.mem_singleton.mp e
             rw [htb, ← hbpen]
             exact hpenW
@@ -717,7 +717,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         cases w with
         | nil => exact absurd (by rw [SimpleGraph.Walk.length_nil] at hw; omega) hzu
         | cons h t' =>
-            exact (SimpleGraph.degree_pos_iff_exists_adj.mpr ⟨_, h⟩).ne' hzu
+            exact (G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩).ne' hzu
       have hdeg2u : 2 ≤ G.degree u := by omega
       have h2 : 2 ≤ Fintype.card α := by
         by_contra h
@@ -733,12 +733,11 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       refine ⟨hcu.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
         ?_⟩
       intro t ht
-      rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk,
-        List.mem_append] at ht
+      rw [SimpleGraph.Walk.support_append, List.mem_append] at ht
       rcases ht with h | h
       · exact hp t h
-      · rcases List.mem_cons.mp h with e | e
-        · exact e ▸ huW
+      · rcases List.mem_cons.mp (List.mem_of_mem_tail h) with e | e
+        · exact e.trans huW
         · have htb : t = b := List.mem_singleton.mp e
           rw [htb]
           exact hWmem b |>.mpr hbnc
