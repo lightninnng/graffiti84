@@ -69,7 +69,7 @@ private theorem getVert_inj_of_isPath {G : SimpleGraph α} {u v : α}
   have hjj : p.getVert j = p.support[j] :=
     SimpleGraph.Walk.getVert_eq_support_getElem p hj
   refine (List.getElem_inj (h₀ := hli) (h₁ := hlj) hpn).mp ?_
-  rw [hii, hjj]
+  rw [← hii, ← hjj]
   exact hij
 
 private theorem dist_self' {G : SimpleGraph α} (hconn : G.Connected) (c : α) :
@@ -97,18 +97,24 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
       simp [SimpleGraph.Adj.toWalk]
     rw [he1]
     refine List.nodup_append.mpr ⟨by simp [hyu], hpn.tail, ?_⟩
-    intro x hx1 hx2
+    rw [List.disjoint_iff_ne]
+    intro x hx1 b hb
     rcases List.mem_cons.mp hx1 with e | e
-    · exact hys (e ▸ hx2)
-    · -- x ∈ [u], i.e. x = u; work with x directly
-      have hxsup : x ∈ p.support := List.mem_of_mem_tail hx2
-      have hu0 : p.support.idxOf x = 0 := by
-        have hxg : p.getVert (p.support.idxOf x) = p.getVert 0 :=
-          (SimpleGraph.Walk.getVert_support_idxOf p hxsup).trans
-            (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hxsup)
+    · intro heq
+      have hbt : x ∈ p.support.tail := heq ▸ hb
+      have hxps : x ∈ p.support := List.mem_of_mem_tail hbt
+      rw [e] at hxps
+      exact hys hxps
+    · have hxu : x = u := List.mem_singleton.mp e
+      subst hxu
+      have hu0 : p.support.idxOf u = 0 := by
+        have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
+          (SimpleGraph.Walk.getVert_support_idxOf p
+            p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
+        exact getVert_inj_of_isPath hp
+          (by have := List.idxOf_lt_length_of_mem p.start_mem_support; omega)
           (Nat.zero_le _) hxg
-      have hts := idxOf_tail_succ p.support hpn x hx2
+      have hts := idxOf_tail_succ p.support hpn u hb
       omega
   have hlen : ((SimpleGraph.Adj.toWalk hy).append p).length = p.length + 1 := by
     rw [SimpleGraph.Walk.length_append]
@@ -190,7 +196,7 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
             (SimpleGraph.Walk.end_mem_support q)
           rw [hql] at hlt
           omega
-        exact getVert_inj_of_isPath hqpath hb1 (le_of_eq hm) hux
+        exact getVert_inj_of_isPath hqpath (by omega) (le_of_eq hm) hux
       omega
     -- backward segment of `p` from position i down to position 1, avoiding u
     set W := (p.take i).reverse with hW
@@ -208,19 +214,23 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         SimpleGraph.Walk.getVert_support_idxOf p
           (SimpleGraph.Walk.getVert_mem_support p 1)
       exact getVert_inj_of_isPath hp
-        (List.idxOf_lt_length_of_mem (SimpleGraph.Walk.getVert_mem_support p 1))
-        hp1 hxg
+        (by have := List.idxOf_lt_length_of_mem
+              (SimpleGraph.Walk.getVert_mem_support p 1)
+            omega)
+        h1 hxg
     have hv1T : (p.support.take (i + 1)).idxOf (p.getVert 1) = 1 := by
       refine idxOf_eq_of_getElem' hTnd (by omega) ?_
-      rw [List.getElem_take, hv1p]
+      rw [List.getElem_take]
+      exact (SimpleGraph.Walk.getVert_eq_support_getElem p (by omega)).symm
     have huT : u ∈ p.support.take (i + 1) := by
       rw [mem_take_iff_idxOf_lt' hpn (SimpleGraph.Walk.start_mem_support p)
         hib]
       have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
         (SimpleGraph.Walk.getVert_support_idxOf p
           p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
-      have := getVert_inj_of_isPath hp
-        (List.idxOf_lt_length_of_mem p.start_mem_support) (Nat.zero_le _) hxg
+      have hinj := getVert_inj_of_isPath hp
+        (by have := List.idxOf_lt_length_of_mem p.start_mem_support; omega)
+        (Nat.zero_le _) hxg
       omega
     have hv₂T : p.getVert 1 ∈ p.support.take (i + 1) := by
       rw [mem_take_iff_idxOf_lt' hpn
