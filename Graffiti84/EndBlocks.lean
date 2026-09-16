@@ -448,7 +448,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
               rw [Finset.mem_singleton] at hx3
               exact hwxn hx3.symm
             rw [Finset.card_insert_of_notMem h1, Finset.card_insert_of_notMem h2,
-              Finset.card_singleton] at hsub
+              Finset.card_insert_of_notMem h3, Finset.card_singleton] at hsub
             omega
           omega
         refine ⟨c, (SimpleGraph.eccent_le_iff c 1).mpr ?_⟩
@@ -467,7 +467,10 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
           · have h1 : G.dist c x = q.length - 1 := by
               rw [hcdef]
               exact dist_getVert_end_of_length_eq_dist hq (by omega)
-            rw [e, ← hq] at h1
+            have hL2 : q.length ≤ 2 := by
+              have := hqp.length_lt
+              omega
+            rw [e]
             omega
           · rw [e, dist_self' hconn c]
             exact Nat.zero_le _
@@ -476,11 +479,11 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
     obtain ⟨a, b, hab⟩ := G.exists_edist_eq_radius_of_finite
     rw [← hab]
     exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected a b)
-    have hle : (G.radius.toNat : ℕ∞) ≤ 1 := by
-      have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
-      calc (G.radius.toNat : ℕ∞) = G.radius := hcoe
-        _ ≤ G.eccent c := G.radius_le_eccent
-        _ ≤ 1 := hc1
+  have hle : (G.radius.toNat : ℕ∞) ≤ 1 := by
+    have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
+    calc (G.radius.toNat : ℕ∞) = G.radius := hcoe
+      _ ≤ G.eccent c := G.radius_le_eccent
+      _ ≤ 1 := hc1
   have hfin : G.radius.toNat ≤ 1 := ENat.coe_le_coe.mp hle
   omega
 
