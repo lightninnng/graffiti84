@@ -648,9 +648,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       | nil => exact absurd rfl hzv
       | cons h t' => rw [SimpleGraph.Walk.length_cons]; omega
     have hpos : 0 < G.degree v :=
-      SimpleGraph.degree_pos_iff_exists_adj.mpr ⟨_, h1 ▸ hw ▸ rfl ▸ rfl⟩
+      G.degree_pos_iff_exists_adj.mpr ⟨_, h1 ▸ hw ▸ rfl ▸ rfl⟩
     omega
-  have hdeg2 : 2 ≤ G.degree v := by omega
+  have hdeg2 : 2 ≤ G.degree v := by
+    rcases Nat.lt_or_ge (G.degree v) 2 with h | h
+    · omega
+    · exact h
   -- W := the non-cut vertices
   set W : Finset α := Finset.univ.filter (fun z => DeleteConnected G z)
     with hWdef
@@ -711,8 +714,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         push_neg at h
         haveI : Subsingleton α :=
           Fintype.card_le_one_iff_subsingleton.mp (by omega)
-        obtain ⟨x, y, hxy⟩ := exists_ne (Classical.arbitrary (α := α))
-        exact hxy (Subsingleton.elim x y)
+        obtain ⟨z, hzv⟩ := exists_ne (Classical.arbitrary (α := α))
+        exact hzv (Subsingleton.elim z (Classical.arbitrary (α := α)))
       obtain ⟨c_u, hcen, huepu⟩ := isUniqueEccentricPoint_of_radOn_erase
         hconn h2 (hmono u hncu)
       have hbnc : DeleteConnected G b :=
