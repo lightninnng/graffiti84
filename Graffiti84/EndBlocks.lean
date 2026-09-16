@@ -106,7 +106,8 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
       exact hys hxps
     · have hxu : x = u := List.mem_singleton.mp e
       intro heq
-      rw [← heq, ← hxu] at hb
+      have hbu : b = u := heq.symm.trans hxu
+      rw [hbu] at hb
       have hu0 : p.support.idxOf u = 0 := by
         have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
           (SimpleGraph.Walk.getVert_support_idxOf p
@@ -253,8 +254,8 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [hWsup]
         exact List.nodup_reverse.mpr hTnd
       have huW' : W.support.idxOf u = i := by
+        rw [hWsup]
         have hrev := idxOf_reverse_mem (p.support.take (i + 1)) hTnd u huT
-        rw [hWsup] at hrev
         have hu0T : (p.support.take (i + 1)).idxOf u = 0 := by
           refine idxOf_eq_of_getElem' hTnd (by omega) ?_
           rw [List.getElem_take]
@@ -265,9 +266,9 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [hu0T, hTlen] at hrev
         omega
       have hv₂W' : W.support.idxOf (p.getVert 1) = i - 1 := by
+        rw [hWsup]
         have hrev := idxOf_reverse_mem (p.support.take (i + 1)) hTnd
           (p.getVert 1) hv₂T
-        rw [hWsup] at hrev
         rw [hv1T, hTlen] at hrev
         omega
       have hjl : j < W.support.length := by
@@ -335,8 +336,9 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
   have hnmin : ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath →
       q.length ≤ Nat.find hex - 1) := by
     have hlt : Nat.find hex - 1 < Nat.find hex := by omega
-    exact Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-      q.IsPath → q.length ≤ n) hex _ hlt
+    have h2 := @Nat.find_min (fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+        q.IsPath → q.length ≤ n) _ hex (Nat.find hex - 1) hlt
+    exact h2
   obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
       q.length = Nat.find hex := by
     by_contra hcon
@@ -355,7 +357,7 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     exact (SimpleGraph.Walk.not_nil_iff_lt_length.mpr hp1).elim
       ((SimpleGraph.Walk.IsPath.nil_iff_eq hpp).mpr rfl)
   have hmax : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ p.length :=
-    fun _ _ q hq => by rw [hplen]; exact hn0spec x y q hq
+    fun x y q hq => by rw [hplen]; exact hn0spec x y q hq
   refine ⟨u, v, huv,
     deleteConnected_of_longest hconn hpp hp1 hmax,
     deleteConnected_of_longest hconn hpp.reverse
