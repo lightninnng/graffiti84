@@ -600,6 +600,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
           (fun e => hz e)
         have hdxc : 1 ≤ G.dist x c := one_le_dist_of_ne hconn hxc
         have hsc2 : G.dist x c = G.dist c x := SimpleGraph.dist_comm
+        have hsym2 : G.dist z c = G.dist c z := SimpleGraph.dist_comm
         have hlt2 := huep.2 z (fun e => hzv e)
         omega
       exact ⟨t, hxt⟩
