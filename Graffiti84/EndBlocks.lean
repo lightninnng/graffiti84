@@ -651,9 +651,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
     refine hsup ?_
     cases w with
-    | nil => omega
+    | nil => exact absurd hw.symm (by omega)
     | cons h t' =>
-        refine (SimpleGraph.degree_pos_iff_mem_support G v).2 ?_
+        refine (SimpleGraph.degree_pos_iff_mem_support G v).mp ?_
         exact G.degree_pos_iff_exists_adj.mpr ⟨_, h⟩
   have hdeg2 : 2 ≤ G.degree v := by omega
   -- W := the non-cut vertices
@@ -720,9 +720,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
         refine hsup ?_
         cases w with
-        | nil => omega
+        | nil => exact absurd hw.symm (by omega)
         | cons h t' =>
-            refine (SimpleGraph.degree_pos_iff_mem_support G u).2 ?_
+            refine (SimpleGraph.degree_pos_iff_mem_support G u).mp ?_
             exact G.degree_pos_iff_exists_adj.mpr ⟨_, h⟩
       have hdeg2u : 2 ≤ G.degree u := by omega
       have h2 : 2 ≤ Fintype.card α := by
