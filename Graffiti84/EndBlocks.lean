@@ -412,9 +412,9 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
           rw [← hcdef, SimpleGraph.Walk.getVert_length] at hne
           exact hne
         have haw : G.Adj w c := by
-          have ha := SimpleGraph.Walk.adj_getVert_succ q (i := 0) (by omega)
-          rw [hw0] at ha
-          rw [hcdef] at ha
+          have ha : G.Adj (q.getVert 0) (q.getVert 1) :=
+            SimpleGraph.Walk.adj_getVert_succ q (by omega)
+          rw [hw0, hcdef] at ha
           exact ha
         -- every vertex equals w, x, or c (four distinct points would force
         -- the cardinality to be at least four)
@@ -471,7 +471,7 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
             have hL2 : q.length ≤ 2 := by
               obtain ⟨q', hq'⟩ := hconn.exists_walk_length_eq_dist w x
               have hqp' : q'.IsPath := isPath_of_length_eq_dist hconn hq'
-              have := hqp'.length_lt
+              have hlt := hqp'.length_lt
               omega
             rw [e]
             omega
