@@ -429,14 +429,14 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
               intro e
               rw [e, dist_self' hconn x] at hx2'
               omega
-            have hzc : z ≠ c := hz.2.2.symm
-            have h1 : w ∉ ({z, c, x} : Finset α) := by
+            have hzc : z ≠ c := hz.2.2
+            have h1 : z ∉ ({c, x, w} : Finset α) := by
               intro hw1
               rw [Finset.mem_insert, Finset.mem_insert, Finset.mem_singleton] at hw1
               rcases hw1 with e | e | e
-              · exact hz.1 e.symm
-              · exact hzc e.symm
-              · exact hwxn e.symm
+              · exact hzc e
+              · exact hz.2.1 e
+              · exact hz.1 e
             have h2 : c ∉ ({x, w} : Finset α) := by
               intro hc2
               rw [Finset.mem_insert, Finset.mem_singleton] at hc2
