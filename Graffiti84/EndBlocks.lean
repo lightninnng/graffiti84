@@ -245,7 +245,6 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_take]
       rw [hsup, hcp, List.mem_take_iff_getElem] at hc
       obtain ⟨j, hj, heq⟩ := hc
-      rw [List.getElem?_eq_some_iff] at heq
       have hWL : W.support.length = i + 1 := by
         rw [hWsup, List.length_reverse, hTlen]
       have huW' : W.support.idxOf u = i := by
@@ -302,27 +301,25 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     [Nontrivial α] :
     ∃ x y : α, x ≠ y ∧ DeleteConnected G x ∧ DeleteConnected G y := by
   classical
-  obtain ⟨n₀, hn₀, hn₀min⟩ : ∃ n, (∀ (x y : α) (q : G.Walk x y), q.IsPath →
-      q.length ≤ n) ∧ ∀ m, m < n →
-      ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ m) := by
-    have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
-        q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
-    have hex : ∃ n, ∀ (x y : α) (q : G.Walk x y), q.IsPath →
-        q.length ≤ n := ⟨Fintype.card α, htop⟩
-    have hsp := Nat.find_spec (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-        q.IsPath → q.length ≤ n) hex
-    have hmn := Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-        q.IsPath → q.length ≤ n) hex
-    exact ⟨Nat.find hex, hsp, hmn⟩
-  have hn1 : 1 ≤ n₀ := by
+  -- a longest path: paths are bounded by the vertex count, so the least
+  -- uniform bound is attained
+  have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
+  have hex : ∃ n, ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ n := ⟨Fintype.card α, htop⟩
+  have hn0spec : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ Nat.find hex :=
+    Nat.find_spec (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+      q.IsPath → q.length ≤ n) hex
+  have hn1 : 1 ≤ Nat.find hex := by
     by_contra h0
-    have h0' : n₀ = 0 := by omega
+    have h0' : Nat.find hex = 0 := by omega
     have a0 : α := Classical.arbitrary (α := α)
     obtain ⟨x, hxy⟩ := exists_ne a0
     obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist x a0
     have hqp : q.IsPath := isPath_of_length_eq_dist hconn hq
     refine hxy ?_
-    have hle := hn₀ x a0 q hqp
+    have hle := hn0spec x a0 q hqp
     rw [hq, h0'] at hle
     have hdeq : G.dist x a0 = 0 := by omega
     obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist x a0
@@ -330,16 +327,21 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     cases t with
     | nil => rfl
     | cons h t' => rw [SimpleGraph.Walk.length_cons] at ht; omega
+  have hnmin : ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath →
+      q.length ≤ Nat.find hex - 1) :=
+    Nat.find_min (p := fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+      q.IsPath → q.length ≤ n) hex (Nat.find hex - 1) (by omega)
   obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
-      q.length = n₀ := by
+      q.length = Nat.find hex := by
     by_contra hcon
     push_neg at hcon
-    have hnm : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ n₀ - 1 := by
+    have hnm : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+        q.length ≤ Nat.find hex - 1 := by
       intro x y q hq
-      have hle := hn₀ x y q hq
+      have hle := hn0spec x y q hq
       have hne := hcon x y q hq
       omega
-    exact absurd hnm (hn₀min (n₀ - 1) (by omega))
+    exact absurd hnm hnmin
   have hp1 : 1 ≤ p.length := by rw [hplen]; exact hn1
   have huv : u ≠ v := by
     intro e
@@ -347,7 +349,7 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     exact (SimpleGraph.Walk.not_nil_iff_lt_length.mpr hp1).elim
       ((SimpleGraph.Walk.IsPath.nil_iff_eq hpp).mpr rfl)
   have hmax : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ p.length :=
-    fun _ _ q hq => by rw [hplen]; exact hn₀ x y q hq
+    fun _ _ q hq => by rw [hplen]; exact hn0spec x y q hq
   refine ⟨u, v, huv,
     deleteConnected_of_longest hconn hpp hp1 hmax,
     deleteConnected_of_longest hconn hpp.reverse
