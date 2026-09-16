@@ -531,7 +531,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     push_neg at hcon
     have hsub : G.neighborFinset v ⊆ {x} := by
       intro z hz
-      have hz2 := hcon z (G.mem_neighborFinset v z |>.mp hz)
+      have hz2 := hcon z (SimpleGraph.Adj.symm (G.mem_neighborFinset v z |>.mp hz))
       rw [hz2]
       exact Finset.mem_singleton.mpr rfl
     have h1' : G.degree v ≤ 1 := by
@@ -571,10 +571,11 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
           ENat.coe_le_coe.mp hle
         have hdyx : 1 ≤ G.dist y x := one_le_dist_of_ne hconn hyx
         have hdxc : 1 ≤ G.dist x c := one_le_dist_of_ne hconn hxc
-        have hsym : G.dist y c = G.dist c y := SimpleGraph.dist_comm y c
+        have hsym : G.dist y c = G.dist c y := SimpleGraph.dist_comm
+        have hsc2 : G.dist x c = G.dist c x := SimpleGraph.dist_comm
         have hlt2 := huep.2 y hyne
         omega
-      refine ⟨(SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hvy)).append t, ?_⟩
+      refine ⟨(SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hyv)).append t, ?_⟩
       intro hc
       rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk] at hc
       simp only [List.mem_append, List.mem_cons, List.mem_singleton] at hc
@@ -598,6 +599,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
         have hdzx : 1 ≤ G.dist z x := one_le_dist_of_ne hconn
           (fun e => hz e)
         have hdxc : 1 ≤ G.dist x c := one_le_dist_of_ne hconn hxc
+        have hsc2 : G.dist x c = G.dist c x := SimpleGraph.dist_comm
         have hlt2 := huep.2 z (fun e => hzv e)
         omega
       exact ⟨t, hxt⟩
