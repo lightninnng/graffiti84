@@ -68,7 +68,7 @@ private theorem getVert_inj_of_isPath {G : SimpleGraph α} {u v : α}
     SimpleGraph.Walk.getVert_eq_support_getElem p hi
   have hjj : p.getVert j = p.support[j] :=
     SimpleGraph.Walk.getVert_eq_support_getElem p hj
-  refine (List.getElem_inj (h₀ := hli) (h₁ := hlj) hpn).mpr ?_
+  refine (List.getElem_inj (h₀ := hli) (h₁ := hlj) hpn).mp ?_
   rw [hii, hjj]
   exact hij
 
@@ -99,14 +99,14 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
     refine List.nodup_append.mpr ⟨by simp [hyu], hpn.tail, ?_⟩
     intro x hx1 hx2
     rcases List.mem_cons.mp hx1 with e | e
-    · subst e
-      exact hys (List.mem_of_mem_tail hx2)
+    · exact hys (e ▸ hx2)
     · -- x ∈ [u], i.e. x = u; work with x directly
+      have hxsup : x ∈ p.support := List.mem_of_mem_tail hx2
       have hu0 : p.support.idxOf x = 0 := by
         have hxg : p.getVert (p.support.idxOf x) = p.getVert 0 :=
-          (SimpleGraph.Walk.getVert_support_idxOf p hx2).trans
+          (SimpleGraph.Walk.getVert_support_idxOf p hxsup).trans
             (SimpleGraph.Walk.getVert_zero p).symm
-        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hx2)
+        exact getVert_inj_of_isPath hp (List.idxOf_lt_length_of_mem hxsup)
           (Nat.zero_le _) hxg
       have hts := idxOf_tail_succ p.support hpn x hx2
       omega
@@ -152,9 +152,10 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
         (e.trans hvL.symm)
       omega
     have hxm : q.getVert (m - 1) ∈ p.support := by
-      have hadjm : G.Adj (q.getVert (m - 1)) (q.getVert m) :=
+      have hadjm : G.Adj (q.getVert (m - 1)) (q.getVert (m - 1 + 1)) :=
         SimpleGraph.Walk.adj_getVert_succ q (i := m - 1) (by rw [hm]; omega)
-      rw [hvL] at hadjm
+      have hm1 : m - 1 + 1 = m := by omega
+      rw [hm1, hvL] at hadjm
       exact mem_support_of_longest hp hmax hadjm
     set i := p.support.idxOf (q.getVert (m - 1)) with hi
     have hgx : p.getVert i = q.getVert (m - 1) :=
@@ -184,9 +185,12 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
             (SimpleGraph.Walk.end_mem_support q)).trans
             (by rw [hm]; exact (SimpleGraph.Walk.getVert_length q).symm)
         rw [hju] at hux
-        exact getVert_inj_of_isPath hqpath
-          (List.idxOf_lt_length_of_mem (SimpleGraph.Walk.end_mem_support q))
-          (le_of_eq hm) hux
+        have hb1 : q.support.idxOf u ≤ q.length := by
+          have hlt := List.idxOf_lt_length_of_mem
+            (SimpleGraph.Walk.end_mem_support q)
+          rw [hql] at hlt
+          omega
+        exact getVert_inj_of_isPath hqpath hb1 (le_of_eq hm) hux
       omega
     -- backward segment of `p` from position i down to position 1, avoiding u
     set W := (p.take i).reverse with hW
@@ -199,8 +203,18 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
     have hTlen : (p.support.take (i + 1)).length = i + 1 := by
       rw [List.length_take]
       omega
+    have hv1p : p.support.idxOf (p.getVert 1) = 1 := by
+      have hxg : p.getVert (p.support.idxOf (p.getVert 1)) = p.getVert 1 :=
+        SimpleGraph.Walk.getVert_support_idxOf p
+          (SimpleGraph.Walk.getVert_mem_support p 1)
+      exact getVert_inj_of_isPath hp
+        (List.idxOf_lt_length_of_mem (SimpleGraph.Walk.getVert_mem_support p 1))
+        hp1 hxg
+    have hv1T : (p.support.take (i + 1)).idxOf (p.getVert 1) = 1 := by
+      refine idxOf_eq_of_getElem' hTnd (by omega) ?_
+      rw [List.getElem_take, hv1p]
     have huT : u ∈ p.support.take (i + 1) := by
-      rw [mem_take_iff_idxOf_lt' hTnd (SimpleGraph.Walk.start_mem_support p)
+      rw [mem_take_iff_idxOf_lt' hpn (SimpleGraph.Walk.start_mem_support p)
         hib]
       have hxg : p.getVert (p.support.idxOf u) = p.getVert 0 :=
         (SimpleGraph.Walk.getVert_support_idxOf p
@@ -208,14 +222,8 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       have := getVert_inj_of_isPath hp
         (List.idxOf_lt_length_of_mem p.start_mem_support) (Nat.zero_le _) hxg
       omega
-    have hv1T : (p.support.take (i + 1)).idxOf (p.getVert 1) = 1 := by
-      refine idxOf_eq_of_getElem' hTnd (by omega) ?_
-      rw [List.getElem_take]
-      have hge : p.support[1] = p.getVert 1 :=
-        (SimpleGraph.Walk.getVert_eq_support_getElem p (by omega)).symm
-      exact hge
     have hv₂T : p.getVert 1 ∈ p.support.take (i + 1) := by
-      rw [mem_take_iff_idxOf_lt' hTnd
+      rw [mem_take_iff_idxOf_lt' hpn
         (SimpleGraph.Walk.getVert_mem_support p 1) hib]
       omega
     have hv₂W : p.getVert 1 ∈ W.support := by
@@ -283,28 +291,29 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     [Nontrivial α] :
     ∃ x y : α, x ≠ y ∧ DeleteConnected G x ∧ DeleteConnected G y := by
   classical
-  haveI hdec : DecidablePred fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-      q.IsPath → q.length ≤ n := fun _ => Classical.dec _
-  have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
-      q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
   obtain ⟨n₀, hn₀, hn₀min⟩ : ∃ n, (∀ (x y : α) (q : G.Walk x y), q.IsPath →
       q.length ≤ n) ∧ ∀ m, m < n →
       ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ m) := by
-    refine ⟨Nat.find ⟨Fintype.card α, htop⟩, Nat.find_spec _, Nat.find_min _⟩
+    haveI hdec : DecidablePred fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
+        q.IsPath → q.length ≤ n := fun _ => Classical.dec _
+    have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+        q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
+    exact ⟨Nat.find ⟨Fintype.card α, htop⟩, Nat.find_spec _, Nat.find_min _⟩
   have hn1 : 1 ≤ n₀ := by
     by_contra h0
     have h0' : n₀ = 0 := by omega
-    obtain ⟨x, y, hxy⟩ := exists_ne (Classical.arbitrary (α := α))
-    obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist x y
+    have a0 : α := Classical.arbitrary (α := α)
+    obtain ⟨x, hxy⟩ := exists_ne a0
+    obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist x a0
     have hqp : q.IsPath := isPath_of_length_eq_dist hconn hq
-    have hd1 : 1 ≤ G.dist x y := by
+    have hd1 : 1 ≤ G.dist x a0 := by
       by_contra hd0
       cases q with
       | nil => exact hxy rfl
       | cons h t =>
         rw [SimpleGraph.Walk.length_cons] at hq
         omega
-    refine hn₀min 0 h0' x y q hqp ?_
+    refine hn₀min 0 h0' x a0 q hqp ?_
     rw [hq]
     omega
   obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
