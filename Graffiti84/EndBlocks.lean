@@ -97,7 +97,6 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
       simp [SimpleGraph.Adj.toWalk]
     rw [he1]
     refine List.nodup_append.mpr ⟨by simp [hyu], hpn.tail, ?_⟩
-    rw [List.disjoint_iff_ne]
     intro x hx1 b hb
     rcases List.mem_cons.mp hx1 with e | e
     · intro heq
@@ -241,7 +240,7 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       exact hv₂T
     have hWT : u ∉ (W.takeUntil (p.getVert 1) hv₂W).support := by
       intro hc
-      have hsup := SimpleGraph.Walk.takeUntil_eq_take W (p.getVert 1) hv₂W
+      have hsup := SimpleGraph.Walk.takeUntil_eq_take W hv₂W
       have hcp : ((W.take (W.support.idxOf (p.getVert 1))).copy rfl
         (SimpleGraph.Walk.getVert_support_idxOf hv₂W)).support
           = W.support.take (W.support.idxOf (p.getVert 1) + 1) := by
@@ -278,12 +277,16 @@ private theorem deleteConnected_of_longest {G : SimpleGraph α}
       subst hju
       rw [huW', hv₂W'] at hj
       omega
-    refine ⟨(q.take (m - 1)).append (W.takeUntil (p.getVert 1) hv₂W), ?_⟩
+    have hWTc : u ∉ ((W.takeUntil (p.getVert 1) hv₂W).copy hgx rfl).support := by
+      rw [SimpleGraph.Walk.support_copy]
+      exact hWT
+    refine ⟨(q.take (m - 1)).append
+      ((W.takeUntil (p.getVert 1) hv₂W).copy hgx rfl), ?_⟩
     intro hu
     rw [SimpleGraph.Walk.support_append, List.mem_append] at hu
     rcases hu with h | h
     · exact hQu h
-    · exact hWT (List.mem_of_mem_tail h)
+    · exact hWTc (List.mem_of_mem_tail h)
   intro X Y hX hY
   obtain ⟨w₁, h₁⟩ := reach X hX
   obtain ⟨w₂, h₂⟩ := reach Y hY
@@ -304,11 +307,13 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
   obtain ⟨n₀, hn₀, hn₀min⟩ : ∃ n, (∀ (x y : α) (q : G.Walk x y), q.IsPath →
       q.length ≤ n) ∧ ∀ m, m < n →
       ¬ (∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ m) := by
-    haveI hdec : DecidablePred fun n : ℕ => ∀ (x y : α) (q : G.Walk x y),
-        q.IsPath → q.length ≤ n := fun _ => Classical.dec _
     have htop : ∀ (x y : α) (q : G.Walk x y), q.IsPath →
         q.length ≤ Fintype.card α := fun _ _ q hq => le_of_lt hq.length_lt
-    exact ⟨Nat.find ⟨Fintype.card α, htop⟩, Nat.find_spec _, Nat.find_min _⟩
+    have hex : ∃ n, ∀ (x y : α) (q : G.Walk x y), q.IsPath →
+        q.length ≤ n := ⟨Fintype.card α, htop⟩
+    have hsp := Nat.find_spec (h := hex)
+    have hmn := Nat.find_min (h := hex)
+    exact ⟨Nat.find hex, hsp, hmn⟩
   have hn1 : 1 ≤ n₀ := by
     by_contra h0
     have h0' : n₀ = 0 := by omega
@@ -316,23 +321,25 @@ theorem exists_two_deleteConnected {G : SimpleGraph α} (hconn : G.Connected)
     obtain ⟨x, hxy⟩ := exists_ne a0
     obtain ⟨q, hq⟩ := hconn.exists_walk_length_eq_dist x a0
     have hqp : q.IsPath := isPath_of_length_eq_dist hconn hq
-    have hd1 : 1 ≤ G.dist x a0 := by
-      by_contra hd0
-      cases q with
-      | nil => exact hxy rfl
-      | cons h t =>
-        rw [SimpleGraph.Walk.length_cons] at hq
-        omega
-    refine hn₀min 0 h0' x a0 q hqp ?_
-    rw [hq]
-    omega
+    refine hxy ?_
+    have hle := hn₀ x a0 q hqp
+    rw [← hq] at hle
+    have hdeq : G.dist x a0 = 0 := by omega
+    obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist x a0
+    rw [hdeq] at ht
+    cases t with
+    | nil => rfl
+    | cons h t' => rw [SimpleGraph.Walk.length_cons] at ht; omega
   obtain ⟨u, v, p, hpp, hplen⟩ : ∃ (x y : α) (q : G.Walk x y), q.IsPath ∧
       q.length = n₀ := by
     by_contra hcon
     push_neg at hcon
-    obtain ⟨x, y, q, hq⟩ := hn₀min (n₀ - 1) (by omega)
-    have := hn₀ x y q hq
-    exact hcon x y q hq (by omega)
+    have hnm : ∀ (x y : α) (q : G.Walk x y), q.IsPath → q.length ≤ n₀ - 1 := by
+      intro x y q hq
+      have hle := hn₀ x y q hq
+      have hne := hcon x y q hq
+      omega
+    exact hn₀min (n₀ - 1) (by omega) hnm u v p hpp (by omega)
   have hp1 : 1 ≤ p.length := by rw [hplen]; exact hn1
   have huv : u ≠ v := by
     intro e
