@@ -113,7 +113,9 @@ private lemma mem_support_of_longest {G : SimpleGraph α} {u v : α}
           (SimpleGraph.Walk.getVert_support_idxOf p
             p.start_mem_support).trans (SimpleGraph.Walk.getVert_zero p).symm
         exact getVert_inj_of_isPath hp
-          (by have := List.idxOf_lt_length_of_mem p.start_mem_support; omega)
+          (by have hpsl := SimpleGraph.Walk.length_support p
+              have := List.idxOf_lt_length_of_mem p.start_mem_support
+              omega)
           (Nat.zero_le _) hxg
       have hts := idxOf_tail_succ p.support hpn u hb
       omega
@@ -402,12 +404,12 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
         have hcwx : c ≠ w := by
           have hne := getVert_ne_of_length_eq_dist hq (i := 0) (j := 1)
             (Nat.zero_le _) (by omega) (by omega)
-          rw [hw0, hcdef] at hne
+          rw [hw0, ← hcdef] at hne
           exact hne.symm
         have hcx : c ≠ x := by
           have hne := getVert_ne_of_length_eq_dist hq (i := 1)
             (j := q.length) (by omega) (le_of_eq rfl) (by omega)
-          rw [hcdef, SimpleGraph.Walk.getVert_length] at hne
+          rw [← hcdef, SimpleGraph.Walk.getVert_length] at hne
           exact hne
         have haw : G.Adj w c := by
           have ha := SimpleGraph.Walk.adj_getVert_succ q (by omega)
@@ -421,17 +423,30 @@ theorem four_le_card_of_radius_ge_two {G : SimpleGraph α} (hconn : G.Connected)
           by_contra hz
           push_neg at hz
           have hcard4 : 4 ≤ Fintype.card α := by
-            have hsub := Finset.card_le_card (s := ({w, x, c, z} : Finset α))
+            have hsub := Finset.card_le_card (s := ({z, c, x, w} : Finset α))
               (Finset.subset_univ _)
             have hwxn : w ≠ x := by
               intro e
               rw [e, dist_self' hconn x] at hx2'
               omega
-            have h1 : z ∉ ({w, x, c} : Finset α) := by
-              simp only [Finset.mem_insert, Finset.mem_insert,
-                Finset.mem_singleton, not_or, hz.1, hz.2.1, hz.2.2]
-            have h2 : c ∉ ({w, x} : Finset α) := by simp [hcwx, hcx]
-            have h3 : x ∉ ({w} : Finset α) := by simp [hwxn]
+            have hzc : z ≠ c := hz.2.2.symm
+            have h1 : w ∉ ({z, c, x} : Finset α) := by
+              intro hw1
+              rw [Finset.mem_insert, Finset.mem_insert, Finset.mem_singleton] at hw1
+              rcases hw1 with e | e | e
+              · exact hz.1 e.symm
+              · exact hzc e.symm
+              · exact hwxn e.symm
+            have h2 : c ∉ ({x, w} : Finset α) := by
+              intro hc2
+              rw [Finset.mem_insert, Finset.mem_singleton] at hc2
+              rcases hc2 with e | e
+              · exact hcx e
+              · exact hcwx e
+            have h3 : x ∉ ({w} : Finset α) := by
+              intro hx3
+              rw [Finset.mem_singleton] at hx3
+              exact hwxn hx3.symm
             rw [Finset.card_insert_of_notMem h1, Finset.card_insert_of_notMem h2,
               Finset.card_singleton] at hsub
             omega
