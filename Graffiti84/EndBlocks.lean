@@ -515,9 +515,10 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     (hdeg : 2 ≤ G.degree v) {x : α} (hxv : G.Adj x v) :
     G.dist c x + 1 = (G.eccent c).toNat ∧ DeleteConnected G x := by
   have hxvne : x ≠ v := G.ne_of_adj hxv
+  have h1 := huep.1
   -- (a) the distance statement
   have htr : G.dist c v ≤ G.dist c x + 1 := by
-    have h1 := hconn.dist_triangle (u := c) (v := x) (w := v)
+    have h2 := hconn.dist_triangle (u := c) (v := x) (w := v)
     have hx1 : G.dist x v ≤ 1 := dist_le_one_of_adj hxv
     omega
   have hlt := huep.2 x hxvne
@@ -530,10 +531,10 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
     push_neg at hcon
     have hsub : G.neighborFinset v ⊆ {x} := by
       intro z hz
-      have hz2 := hcon z (SimpleGraph.mem_neighborFinset.mp hz)
+      have hz2 := hcon z (G.mem_neighborFinset v z |>.mp hz)
       rw [hz2]
       exact Finset.mem_singleton.mpr rfl
-    have h1 : G.degree v ≤ 1 := by
+    have h1' : G.degree v ≤ 1 := by
       have hcard : (G.neighborFinset v).card ≤ ({x} : Finset α).card :=
         Finset.card_le_card hsub
       have hsingle : ({x} : Finset α).card = 1 := rfl
@@ -544,7 +545,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
   -- x ≠ c: otherwise the second neighbour y would violate the UEP bounds
   have hxc : x ≠ c := by
     intro e
-    have hyc : y ≠ c := fun hcy => hyx (by rw [e, ← hcy])
+    have hyc : c ≠ y := fun hcy => hyx (by rw [← hcy, e])
     have hv1 : G.dist c v ≤ 1 := by
       rw [← e]
       exact dist_le_one_of_adj hxv
@@ -565,9 +566,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
           (hconn.preconnected y x).coe_dist_eq_edist
         have hc2 : ((G.dist x c : ℕ) : ℕ∞) = G.edist x c :=
           (hconn.preconnected x c).coe_dist_eq_edist
-        have hc3 : ((G.dist y c : ℕ) : ℕ∞) = G.edist y c :=
-          (hconn.preconnected y c).coe_dist_eq_edist
-        rw [hc3, hc1, hc2] at hle
+        rw [← hc1, ← hc2, ht] at hle
         have hle2 : G.dist y x + G.dist x c ≤ G.dist y c :=
           ENat.coe_le_coe.mp hle
         have hdyx : 1 ≤ G.dist y x := one_le_dist_of_ne hconn hyx
@@ -575,14 +574,14 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
         have hsym : G.dist y c = G.dist c y := SimpleGraph.dist_comm y c
         have hlt2 := huep.2 y hyne
         omega
-      refine ⟨(SimpleGraph.Adj.toWalk (G.symm hvy)).append t, ?_⟩
+      refine ⟨(SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hvy)).append t, ?_⟩
       intro hc
       rw [SimpleGraph.Walk.support_append, SimpleGraph.Adj.toWalk] at hc
       simp only [List.mem_append, List.mem_cons, List.mem_singleton] at hc
       rcases hc with hc2 | hc2
       · rcases List.mem_cons.mp hc2 with e | e
         · exact hxvne e
-        · exact hyx e.symm
+        · exact hyx (List.mem_singleton.mp e).symm
       · exact hxt (List.mem_of_mem_tail hc2)
     · -- z ≠ v: the geodesic z -> c avoids x
       obtain ⟨t, ht⟩ := hconn.exists_walk_length_eq_dist z c
@@ -593,9 +592,7 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
           (hconn.preconnected z x).coe_dist_eq_edist
         have hc2 : ((G.dist x c : ℕ) : ℕ∞) = G.edist x c :=
           (hconn.preconnected x c).coe_dist_eq_edist
-        have hc3 : ((G.dist z c : ℕ) : ℕ∞) = G.edist z c :=
-          (hconn.preconnected z c).coe_dist_eq_edist
-        rw [hc3, hc1, hc2] at hle
+        rw [← hc1, ← hc2, ht] at hle
         have hle2 : G.dist z x + G.dist x c ≤ G.dist z c :=
           ENat.coe_le_coe.mp hle
         have hdzx : 1 ≤ G.dist z x := one_le_dist_of_ne hconn
