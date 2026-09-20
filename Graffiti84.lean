@@ -4,6 +4,7 @@ import Graffiti84.InducedTree
 import Graffiti84.LeafCore
 import Graffiti84.MaximalTree
 import Graffiti84.CaseA
+import Graffiti84.LeafDeletion
 import Graffiti84.CaseB
 import Graffiti84.RootedChung
 import Graffiti84.RadiusCriticalStructure
