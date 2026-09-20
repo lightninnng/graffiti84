@@ -818,7 +818,16 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.dist_le (p.dropLast)
   have hbeq : G.dist c b = G.dist c p.penultimate := by rw [hpen]
   have h := SimpleGraph.dist_le (p.dropLast)
-  rw [hlen] at h
+  rw [show p.dropLast.length = p.length - 1 from hlen] at h
+  have h2 : G.dist c u = p.length := hsu
+  have h3 : p.length - 1 + 1 = p.length := by
+    have hp1 : 0 < p.length := by
+      cases p with
+      | nil => exact absurd rfl hpne
+      | cons h' t' =>
+          rw [SimpleGraph.Walk.length_cons]
+          omega
+    omega
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -861,20 +870,22 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       rcases hmem with h1 | h2
       · -- u ∈ dropLast.support of q, i.e. at a non-final slot of q.support
         rw [SimpleGraph.Walk.support_dropLast hqne] at h1
-        have hzu : u ∈ q.support.dropLast := h1
         -- u is q's terminal vertex; the geodesic path property forbids it
         have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
         have hwn : w.support.Nodup := hpath.support_nodup
         have hqnd : q.support.Nodup := by
-          rw [hqr]
+          have hsplit : w.support = q.support ++ r.support := by
+            rw [hqr]
+            exact SimpleGraph.Walk.support_append q r
+          rw [hsplit]
           exact hwn.of_append_left
-        have huin : u ∈ q.support := by
-          rw [SimpleGraph.Walk.support_dropLast hqne] at h1
-          exact List.mem_of_mem_dropLast h1
+        have huin : u ∈ q.support :=
+          List.mem_dropLast_of_mem h1
         have hidx1 : q.support.idxOf u = q.support.length - 1 := by
           have hmemL : u ∈ q.support := huin
           have hlt := List.idxOf_lt_length_of_mem hmemL
-          have hv := List.getElem_idxOf hmemL
+          have hv : q.support[q.support.idxOf u] = u :=
+            List.getElem_idxOf hlt
           have hj : q.support[q.support.length - 1] = u := by
             cases q with
             | nil => exact absurd (by simp) hqne
@@ -890,7 +901,10 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       · -- u ∈ rt.support would put u twice in r's support (head + here),
         -- contradicting the geodesic's nodup
         have hrnd : r.support.Nodup := by
-          rw [hqr]
+          have hsplit : w.support = q.support ++ r.support := by
+            rw [hqr]
+            exact SimpleGraph.Walk.support_append q r
+          rw [hsplit]
           exact hwn.of_append_right
         have hrs : r.support = u :: rt.support := by
           rw [hrcons]
@@ -948,7 +962,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         have hidx1 : q.support.idxOf u = q.support.length - 1 := by
           have hmemL : u ∈ q.support := huin
           have hlt := List.idxOf_lt_length_of_mem hmemL
-          have hv := List.getElem_idxOf hmemL
+          have hv : q.support[q.support.idxOf u] = u :=
+            List.getElem_idxOf hlt
           have hj : q.support[q.support.length - 1] = u := by
             cases q with
             | nil => exact absurd (by simp) hqne
