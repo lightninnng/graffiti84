@@ -214,7 +214,8 @@ theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
           haveI : Nontrivial {x // x ∈ Finset.univ.erase v} :=
             SimpleGraph.nontrivial_of_degree_ne_zero (G := D) (v := uD) (by rw [huD]; omega)
           have hD : D.Connected := (connected_induce_erase_iff v).mpr hv
-          have hIH := ih _ (small v) {x // x ∈ Finset.univ.erase v} D rfl hD ⟨uD, huD⟩
+          have hIH := ih _ (small v) {x // x ∈ Finset.univ.erase v} D
+            (by apply Fintype.card_congr; exact Equiv.refl _) hD ⟨uD, huD⟩
           have ht := treeNumber_induce_le F (Finset.univ.erase v)
           have hrlt : D.radius.toNat < F.radius.toNat := by omega
           have hd := enat_add_one_le_of_toNat_lt (finite_radius_of_connected hD) hFtop hrlt
@@ -253,7 +254,8 @@ theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
             have hp := hH.preconnected.degree_pos_of_nontrivial v
             by_contra hh
             have hv : H.degree v = 1 := by omega
-            have hIH := ih _ (small u) {x // x ∈ Finset.univ.erase u} H rfl hH ⟨v, hv⟩
+            have hIH := ih _ (small u) {x // x ∈ Finset.univ.erase u} H
+              (by apply Fintype.card_congr; exact Equiv.refl _) hH ⟨v, hv⟩
             have ht := treeNumber_induce_le F (Finset.univ.erase u)
             omega
           have hdropH : ∀ v : {x // x ∈ Finset.univ.erase u}, v.val ≠ a →
