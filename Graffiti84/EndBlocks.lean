@@ -739,7 +739,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have hvS : v ∈ S := (hSiff v).mpr
     ⟨hWmem v |>.mpr hv, ⟨SimpleGraph.Walk.nil, by
       intro t ht
-      exact List.mem_cons.mp ht |>.symm ▸ rfl⟩⟩
+      rcases List.mem_cons.mp ht with e | e
+      · exact e
+      · exact e⟩⟩
   have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
     hstep u hu z (SimpleGraph.Adj.symm huz)
   -- the cut vertex a is neither in W nor in S
@@ -748,12 +750,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have haS : a ∉ S := fun hs => haW ((hSiff a).mp hs).1
   obtain ⟨b, hbS⟩ : ∃ b, b ∉ S := ⟨a, haS⟩
   obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v b
-  exact hbS (walk_end_mem_of_closed hS w hvS)
+  exact hbS (walk_end_mem_of_closed hclosed w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
 leaves. -/
 theorem exists_two_isLeaf_of_hasCut {G : SimpleGraph α} (hconn : G.Connected)
-    [Nonempty α]
+    [Nonempty α] [Nontrivial α]
     (hmono : ∀ z : α, DeleteConnected G z →
       radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
     (hac : ∃ a, IsCut G a) :
