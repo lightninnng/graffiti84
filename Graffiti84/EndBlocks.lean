@@ -641,15 +641,16 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   by_contra hdeg
   have hdeg0 : G.degree v ≠ 0 := by
     intro h0
+    -- v has a neighbour (a walk of positive length to another vertex)
     obtain ⟨z, hzv⟩ := exists_ne v
+    have hdist : 1 ≤ G.dist v z := one_le_dist_of_ne hconn (Ne.symm hzv)
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v z
-    have h1 : 1 ≤ w.length := by
-      cases w with
-      | nil => exact absurd rfl hzv
-      | cons h t' => rw [SimpleGraph.Walk.length_cons]; omega
-    have hpos : 0 < G.degree v :=
-      G.degree_pos_iff_exists_adj.mpr ⟨_, h1 ▸ hw ▸ rfl ▸ rfl⟩
-    omega
+    cases w with
+    | nil =>
+        rw [SimpleGraph.Walk.length_nil] at hw
+        omega
+    | cons h t' =>
+        exact absurd (G.degree_pos_iff_exists_adj v |>.mpr ⟨_, h⟩) h0
   have hdeg2 : 2 ≤ G.degree v := by
     rcases Nat.lt_or_ge (G.degree v) 2 with h | h
     · omega
@@ -736,8 +737,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
           exact hWmem b |>.mpr hbnc
   have hvS : v ∈ S := by
     rw [hSdef]
-    simp only [Finset.mem_filter, Finset.mem_univ]
-    refine ⟨hWmem v |>.mpr hv, SimpleGraph.Walk.nil, ?_⟩
+    simp only [Finset.mem_filter, Finset.mem_univ, hWmem v |>.mpr hv, and_true]
+    refine ⟨SimpleGraph.Walk.nil, ?_⟩
     rw [SimpleGraph.Walk.support_nil]
     intro t ht
     exact ht rfl
