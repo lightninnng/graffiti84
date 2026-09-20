@@ -176,7 +176,7 @@ theorem connected_induce_erase_iff {G : SimpleGraph α} [Nontrivial α] (v : α)
     obtain ⟨x, hx⟩ := exists_ne v
     haveI : Nonempty {z // z ∈ S} :=
       ⟨⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩⟩
-    refine ⟨?_, inferInstance⟩
+    refine ⟨?_⟩
     intro x y
     obtain ⟨p, hp⟩ := hdel x.val y.val
       (Finset.mem_erase.mp x.property).1 (Finset.mem_erase.mp y.property).1

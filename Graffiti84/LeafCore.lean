@@ -52,7 +52,7 @@ theorem nonleaf_induce_connected {G : SimpleGraph α} (hconn : G.Connected)
     (hS : (nonleafSet G).Nonempty) : (G.induce (nonleafSet G : Set α)).Connected := by
   obtain ⟨c, hc⟩ := hS
   haveI : Nonempty {v // v ∈ nonleafSet G} := ⟨⟨c, hc⟩⟩
-  refine ⟨?_, inferInstance⟩
+  refine ⟨?_⟩
   intro x y
   apply SimpleGraph.edist_ne_top_iff_reachable.mp
   rw [nonleaf_induce_edist hconn]
