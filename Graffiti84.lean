@@ -1,5 +1,6 @@
 import Graffiti84.BasicFacts
 import Graffiti84.Deletion
+import Graffiti84.CaseB
 import Graffiti84.RootedChung
 import Graffiti84.RadiusCriticalStructure
 import Graffiti84.LeafLemma
