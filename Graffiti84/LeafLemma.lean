@@ -83,7 +83,7 @@ theorem isInducedTree_insert_leaf {α : Type*} [Fintype α] [DecidableEq α]
       refine ⟨hua.toWalk, ?_⟩
       intro z hz
       simp only [SimpleGraph.Adj.toWalk, SimpleGraph.Walk.support_cons,
-        SimpleGraph.Walk.support_nil, List.mem_cons, List.mem_singleton] at hz
+        SimpleGraph.Walk.support_nil, List.mem_cons, List.not_mem_nil, or_false] at hz
       rcases hz with hz | hz
       · rw [hz]; exact Finset.mem_insert_self u S
       · rw [hz]; exact Finset.mem_insert_of_mem ha
