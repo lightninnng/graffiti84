@@ -788,4 +788,74 @@ theorem exists_two_isLeaf_of_hasCut {G : SimpleGraph α} (hconn : G.Connected)
   · exact degree_eq_one_of_nonCut_of_hasCut hconn hmono hac hx
   · exact degree_eq_one_of_nonCut_of_hasCut hconn hmono hac hy
 
+
+
+/-! ### 3.6b: a vertex has at most one leaf neighbour -/
+
+/-- A leaf's only edge is the last one of any walk ending there: the
+penultimate vertex of a walk to a leaf is its unique neighbour. -/
+private theorem penultimate_eq_of_leaf_end {G : SimpleGraph α} {b u : α}
+    (hu : G.degree u = 1) (hub : G.Adj u b) {c : α} (p : G.Walk c u)
+    (hpne : ¬ p.Nil) : p.penultimate = b :=
+  adj_eq_of_degree_eq_one hu (SimpleGraph.Adj.symm
+    (SimpleGraph.Walk.adj_penultimate hpne))
+    (SimpleGraph.Adj.symm hub)
+
+/-- The distance from `c` to a leaf `u` exceeds the distance from `c` to
+its neighbour by at least one. -/
+private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
+    {b u : α} (hu : G.degree u = 1) (hub : G.Adj u b) (c : α) :
+    G.dist c b + 1 ≤ G.dist c u := by
+  obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist c u
+  have hbune : b ≠ u := G.ne_of_adj hub
+  have hpne : ¬p.Nil := by
+    intro hnil
+    rw [SimpleGraph.Walk.IsPath.nil_iff_eq hnil] at *
+    omega
+  have hpen : p.penultimate = b := penultimate_eq_of_leaf_end hu hub p hpne
+  have htake := SimpleGraph.dist_le (p.dropLast)
+  rw [show p.dropLast.length = p.length - 1 from
+    SimpleGraph.Walk.length_dropLast p] at htake
+  have hsu : G.dist c u = p.length := hp.symm
+  omega
+
+/-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
+distinct leaves. -/
+theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
+    (hmono : ∀ z : α, DeleteConnected G z →
+      radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
+    (hr2 : 2 ≤ G.radius.toNat) {b u u' : α}
+    (hu : G.degree u = 1) (hub : G.Adj u b)
+    (hu' : G.degree u' = 1) (hu'b : G.Adj u' b) : u = u' := by
+  by_contra hne
+  have hne' : u ≠ u' := hne
+  -- F8 applies to the non-cut leaf u (radius-drop bookkeeping)
+  have hncu : DeleteConnected G u := by
+    by_contra hcut
+    exact hcut (radOn_erase_le_radOn_of_isLeaf hconn hu hub (by omega))
+  have h2 : 2 ≤ Fintype.card α := by
+    obtain ⟨z, hz⟩ := exists_ne u
+    obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
+    cases w with
+    | nil => exact absurd rfl hz
+    | cons h t' =>
+        have hpos : 0 < G.degree u :=
+          G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩
+        omega
+  obtain ⟨c_u, hcen, huepu⟩ := isUniqueEccentricPoint_of_radOn_erase
+    hconn h2 (hmono u hncu)
+  -- d(c_u, b) = r - 1 and d(c_u, u) = r
+  have hdcu : G.dist c_u u = (G.eccent c_u).toNat := huepu.1
+  have hdcb : G.dist c_u b + 1 = (G.eccent c_u).toNat := by
+    have h1 : G.dist c_u u ≤ G.dist c_u b + 1 := by
+      have htr := hconn.dist_triangle (u := c_u) (v := b) (w := u)
+      have hb1 : G.dist b u ≤ 1 := dist_le_one_of_adj hub
+      omega
+    omega
+  -- u' also sits at distance r - 1 + 1 = r from c_u, contradicting UEP
+  have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
+    dist_leaf_ge hconn hu' hu'b c_u
+  have hlt := huepu.2 u' hne'
+  omega
+
 end Graffiti84
