@@ -928,4 +928,67 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   have hlt := huepu.2 u' (Ne.symm hne')
   omega
 
+
+/-- Case B, Claim 3, without block decomposition. If all non-cut vertices
+except possibly `a` decrease the radius, and all degrees are at least two,
+then there are no cut vertices. -/
+theorem deleteConnected_all_of_drop_except {G : SimpleGraph α}
+    (hconn : G.Connected) [Nontrivial α] (a : α)
+    (hdeg : ∀ v, 2 ≤ G.degree v)
+    (hdrop : ∀ v, v ≠ a → DeleteConnected G v →
+      radOn G (Finset.univ.erase v) + 1 ≤ G.radius) :
+    ∀ v, DeleteConnected G v := by
+  have hstep : ∀ v, v ≠ a → DeleteConnected G v →
+      ∀ w, G.Adj v w → DeleteConnected G w := by
+    intro v hva hv w hvw
+    obtain ⟨c, _, hc⟩ := isUniqueEccentricPoint_of_radOn_erase hconn
+      (show 2 ≤ Fintype.card α from Fintype.one_lt_card)
+      (by simpa only [radOn_univ_eq_radius] using hdrop v hva hv)
+    exact (deleteConnected_of_isUniqueEccentricPoint_neighbor hconn hc
+      (hdeg v) hvw.symm).2
+  obtain ⟨x, y, hxy, hx, hy⟩ := exists_two_deleteConnected hconn
+  obtain ⟨v, hva, hv⟩ : ∃ v, v ≠ a ∧ DeleteConnected G v := by
+    by_cases hxa : x = a
+    · exact ⟨y, fun hya => hxy (hxa.trans hya.symm), hy⟩
+    · exact ⟨x, hxa, hx⟩
+  by_cases ha : DeleteConnected G a
+  · have propagate : ∀ {u w : α} (p : G.Walk u w),
+        a ∉ p.support → DeleteConnected G u → DeleteConnected G w := by
+      intro u w p
+      induction p with
+      | nil => intro _ hu; exact hu
+      | @cons u z w huz p ih =>
+        intro havoid hu
+        have hua : u ≠ a := by
+          intro e
+          apply havoid
+          rw [← e]
+          exact SimpleGraph.Walk.start_mem_support _
+        have hp : a ∉ p.support := by
+          intro hm
+          apply havoid
+          exact List.mem_cons_of_mem u hm
+        exact ih hp (hstep u hua hu z huz)
+    intro w
+    by_cases hwa : w = a
+    · simpa only [hwa] using ha
+    · obtain ⟨p, hp⟩ := ha v w hva hwa
+      exact propagate p hp hv
+  · have closed : ∀ u w, DeleteConnected G u → G.Adj u w →
+        DeleteConnected G w := by
+      intro u w hu huw
+      apply hstep u _ hu w huw
+      intro e
+      exact ha (e ▸ hu)
+    have propagate : ∀ {u w : α} (p : G.Walk u w),
+        DeleteConnected G u → DeleteConnected G w := by
+      intro u w p
+      induction p with
+      | nil => intro hu; exact hu
+      | @cons u z w huz p ih =>
+        intro hu
+        exact ih (closed u z hu huz)
+    obtain ⟨p⟩ := hconn.preconnected v a
+    exact (ha (propagate p hv)).elim
+
 end Graffiti84
