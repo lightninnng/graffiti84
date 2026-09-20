@@ -798,8 +798,7 @@ private theorem penultimate_eq_of_leaf_end {G : SimpleGraph α} {b u : α}
     (hu : G.degree u = 1) (hub : G.Adj u b) {c : α} (p : G.Walk c u)
     (hpne : ¬ p.Nil) : p.penultimate = b :=
   adj_eq_of_degree_eq_one hu (SimpleGraph.Adj.symm
-    (SimpleGraph.Walk.adj_penultimate hpne))
-    (SimpleGraph.Adj.symm hub)
+    (SimpleGraph.Walk.adj_penultimate hpne)) hub
 
 /-- The distance from `c` to a leaf `u` exceeds the distance from `c` to
 its neighbour by at least one. -/
@@ -807,12 +806,16 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     {b u : α} (hu : G.degree u = 1) (hub : G.Adj u b) (c : α) :
     G.dist c b + 1 ≤ G.dist c u := by
   obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist c u
-  have hbune : b ≠ u := G.ne_of_adj hub
+  have hbune : b ≠ u := SimpleGraph.Adj.symm hub |>.ne
   have hpne : ¬p.Nil := by
     intro hnil
-    rw [SimpleGraph.Walk.IsPath.nil_iff_eq hnil] at *
+    have hcu : c = u := SimpleGraph.Walk.IsPath.nil_iff_eq hnil
+    have h0 : G.dist c b = 0 := by
+      rw [hcu, SimpleGraph.dist_comm]
+      exact dist_self' hconn b
+    have h1 : G.dist c b + 1 ≤ G.dist c u := by rw [hcu]; omega
+    have hd : G.dist c u = 0 := by rw [hcu]; exact dist_self' hconn u
     omega
-  have hpen : p.penultimate = b := penultimate_eq_of_leaf_end hu hub p hpne
   have htake := SimpleGraph.dist_le (p.dropLast)
   rw [show p.dropLast.length = p.length - 1 from
     SimpleGraph.Walk.length_dropLast p] at htake
