@@ -812,10 +812,11 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have hsu : G.dist c u = p.length := hp.symm
   have hpen : p.penultimate = b :=
     penultimate_eq_of_leaf_end hu hub p hpne
-  have hdrop : G.dist c p.penultimate ≤ p.length - 1 := by
+  have hdrop : G.dist c b ≤ p.length - 1 := by
     have h := SimpleGraph.dist_le (p.dropLast)
     rw [show p.dropLast.length = p.length - 1 from
       SimpleGraph.Walk.length_dropLast p] at h
+    rw [hpen] at h
     exact h
   omega
 
@@ -852,7 +853,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hqpen : q.penultimate = b :=
         penultimate_eq_of_leaf_end hu hub q hqne
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      rw [hpend]
+      rw [hpend] at hqne ⊢
       refine ⟨(q.dropLast.append rt), ?_⟩
       intro z hz
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
