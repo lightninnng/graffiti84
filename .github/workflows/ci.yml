@@ -2,7 +2,7 @@ name: Lean CI
 
 on:
   push:
-    branches: [main, 'codex/**', 'zcode/**']
+    branches: [main, 'zcode/**']
   workflow_dispatch:
 
 jobs:

@@ -9,7 +9,7 @@ Pinned environment:
 
 Lean runs in the GitHub-hosted Ubuntu runner in `.github/workflows/ci.yml`.
 The local workspace is used for editing and reading Mathlib source only.
-Pushes to `main`, `codex/**`, or `zcode/**` run dependency resolution, Mathlib cache fetch
+Pushes to `main` or `zcode/**` run dependency resolution, Mathlib cache fetch
 (with retries), `lake build`, source auditing, and declaration axiom reports.
 
 ## Final theorem
