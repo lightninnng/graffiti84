@@ -710,7 +710,24 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
             exact hpenW
     · -- deg u ≥ 2: F8 gives a UEP centre, and 3.2 makes b a non-cut vertex
       have hncu : DeleteConnected G u := hWmem u |>.mp huW
-      have hdeg2u : 2 ≤ G.degree u := by omega
+      have hdeg2u : 2 ≤ G.degree u := by
+        rcases Nat.lt_or_ge (G.degree u) 2 with hlt | hge
+        · have hne1 : G.degree u ≠ 1 := hleaf
+          have hne0 : G.degree u ≠ 0 := by
+            intro h0
+            obtain ⟨z, hzu⟩ := exists_ne u
+            have hdist : 1 ≤ G.dist u z :=
+              one_le_dist_of_ne hconn (Ne.symm hzu)
+            obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
+            cases w with
+            | nil =>
+                rw [SimpleGraph.Walk.length_nil] at hw
+                omega
+            | cons h t' =>
+                exact absurd
+                  (G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩) h0
+          omega
+        · exact hge
       have h2 : 2 ≤ Fintype.card α := by
         by_contra h
         push_neg at h
@@ -723,7 +740,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       have hbnc : DeleteConnected G b :=
         (deleteConnected_of_isUniqueEccentricPoint_neighbor hconn huepu
           hdeg2u hbu).2
-      refine ⟨hWmem b |>.mpr hbnc, ?_⟩
+      refine (hSiff b).mpr ⟨hWmem b |>.mpr hbnc, ?_⟩
       refine ⟨hcu.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
         ?_⟩
       intro t ht
@@ -743,8 +760,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       · rw [e]
         exact hWmem v |>.mpr hv
       · exact absurd e (by simp)⟩⟩
-  have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
-    hstep u hu z (SimpleGraph.Adj.symm huz)
+  have hclosed : ∀ (u : α), u ∈ S → ∀ (z : α), G.Adj u z → z ∈ S :=
+    fun u hu z huz => hstep u hu z (SimpleGraph.Adj.symm huz)
   -- the cut vertex a is neither in W nor in S
   obtain ⟨a, ha⟩ := hac
   have haW : a ∉ W := fun hm => ha ((hWmem a).mp hm)
