@@ -809,12 +809,10 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have hbune : b ≠ u := SimpleGraph.Adj.symm hub |>.ne
   have hpne : ¬p.Nil := by
     intro hnil
-    have hcu : c = u := SimpleGraph.Walk.IsPath.nil_iff_eq hnil
+    have hcu : c = u := hnil.eq
     have h0 : G.dist c b = 0 := by
       rw [hcu, SimpleGraph.dist_comm]
       exact dist_self' hconn b
-    have h1 : G.dist c b + 1 ≤ G.dist c u := by rw [hcu]; omega
-    have hd : G.dist c u = 0 := by rw [hcu]; exact dist_self' hconn u
     omega
   have htake := SimpleGraph.dist_le (p.dropLast)
   rw [show p.dropLast.length = p.length - 1 from
