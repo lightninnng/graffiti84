@@ -816,9 +816,9 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.Walk.length_dropLast p
   have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
     SimpleGraph.dist_le (p.dropLast)
-  have hbeq : G.dist c b = G.dist c p.penultimate := by
-    rw [hpen.symm]
-  omega
+  rw [hpen]
+  exact Nat.succ_le_succ (SimpleGraph.dist_le (p.dropLast) |>.trans
+    (by rw [hlen]))
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
 distinct leaves. -/
@@ -855,9 +855,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
       refine ⟨((q.dropLast).copy rfl hpend).append rt, ?_⟩
       intro hmem
-      rw [SimpleGraph.Walk.support_append, List.mem_append] at hmem
-      rw [SimpleGraph.Walk.support_copy] at hmem
-      simp only [List.mem_append] at hmem
+      rw [SimpleGraph.Walk.support_append, List.mem_append,
+        SimpleGraph.Walk.support_copy] at hmem
       rcases hmem with h1 | h2
       · -- u ∈ dropLast.support of q, i.e. at a non-final slot of q.support
         rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
@@ -1001,20 +1000,6 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     hconn h2 (hmono u hncu)
   -- d(c_u, b) = r - 1 and d(c_u, u) = r
   have hdcu : G.dist c_u u = (G.eccent c_u).toNat := huepu.1
-  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
-    have hrle : G.radius ≤ G.eccent c_u :=
-      G.radius_le_eccent (u := c_u)
-    have hne : G.radius ≠ ⊤ := by
-      obtain ⟨x, y, hxy⟩ := G.exists_edist_eq_radius_of_finite
-      rw [← hxy]
-      exact SimpleGraph.edist_ne_top_iff_reachable.mpr
-        (hconn.preconnected x y)
-    have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
-    have hmon : ((G.radius.toNat : ℕ) : ℕ∞) ≤ ((G.eccent c_u).toNat : ℕ∞) := by
-      rw [hcoe]
-      exact hrle
-    have hr2' : 2 ≤ G.radius.toNat := hr2
-    omega
   have hdcb : G.dist c_u b + 1 = (G.eccent c_u).toNat := by
     have h1 : G.dist c_u u ≤ G.dist c_u b + 1 := by
       have htr := hconn.dist_triangle (u := c_u) (v := b) (w := u)
@@ -1022,6 +1007,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         dist_le_one_of_adj (SimpleGraph.Adj.symm hub)
       omega
     omega
+  -- ecc(c_u) = d(c_u, u) = r ≥ 2
+  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by omega
   -- u' also sits at distance ≥ (r-1)+1 from c_u: any c_u-u' walk ends
   -- with the unique leaf edge b-u'
   have hb'u : b ≠ u' := by
