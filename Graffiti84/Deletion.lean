@@ -64,8 +64,14 @@ lemma induce_edist_eq_of_shortest_walk {G : SimpleGraph α} {S : Finset α}
       (SimpleGraph.Embedding.induce (S : Set α)).toHom (p.induce (S : Set α) hmem)
     rw [SimpleGraph.Walk.map_induce] at hm
     exact hm.symm
-  have hle := SimpleGraph.edist_le (p.induce (S : Set α) hmem)
-  simpa only [hlen, hp] using hle
+  let q : (G.induce (S : Set α)).Walk x y :=
+    (p.induce (S : Set α) hmem).copy (Subtype.ext rfl) (Subtype.ext rfl)
+  calc
+    (G.induce (S : Set α)).edist x y ≤ (q.length : ℕ∞) := SimpleGraph.edist_le q
+    _ = (p.length : ℕ∞) := by
+      dsimp only [q]
+      rw [SimpleGraph.Walk.length_copy, hlen]
+    _ = G.edist x.val y.val := hp
 
 /-- F7 for the actual deleted graph, not merely the restricted ambient metric. -/
 theorem induce_radius_drop_of_central_uep {G : SimpleGraph α} [Nontrivial α]
