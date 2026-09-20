@@ -9,6 +9,11 @@ Conjecture 84 (Fajtlowicz):
 > **2·r(G) ≤ t(G)·δ(G)**, where `r(G)` is the radius, `t(G)` is the maximum
 > number of vertices in an induced tree, and `δ(G)` is the minimum degree.
 
+Relative to prior work, the new content is the leaf case
+`δ(G) = 1 ⟹ t(G) ≥ 2r(G)`, which strengthens the classical
+Erdős–Saks–Sós bound `t(G) ≥ 2r − 1` by one exactly when a leaf exists —
+see [Prior work and the contribution](#prior-work-and-the-contribution).
+
 The final declaration is
 [`Graffiti84.graphConjecture84`](Graffiti84/GraphConjecture84.lean). It is
 compiled and audited by GitHub Actions on a clean Ubuntu sandbox on every push.
@@ -35,6 +40,33 @@ The typeclass arguments fix the setting: `Fintype α` + `DecidableEq α` restric
 
 The theorem carries no radius-critical or structural side hypotheses — the
 assumptions are exactly the hypotheses of the conjecture.
+
+## Prior work and the contribution
+
+Erdős, Saks, and Sós (1986) proved that every connected graph of radius `r`
+contains an induced path on at least `2r − 1` vertices, so
+`t(G) ≥ 2r − 1` holds unconditionally
+(*Maximum Induced Trees in Graphs*, J. Combin. Theory Ser. B 41 (1986),
+61–79). This classical bound already covers the conjecture whenever
+`δ(G) ≥ 2`:
+
+```text
+2r/δ(G) ≤ r ≤ 2r − 1 ≤ t(G)
+```
+
+The remaining case — and the core of this work — is the leaf case:
+
+> **`δ(G) = 1` implies `t(G) ≥ 2r(G)`** (`Graffiti84.leafLemma`)
+
+This strengthens the Erdős–Saks–Sós bound `2r − 1` to exactly `2r`
+precisely when the graph has a leaf, and together with the elementary
+`δ ≥ 2` case it resolves Conjecture 84.
+
+The formalization is self-contained with respect to this history: it does
+not build on the Erdős–Saks–Sós theorem. The `δ ≥ 2` case is proved by an
+elementary geodesic argument (`t ≥ r + 1`), and the leaf lemma is proved
+from first principles; the axiom report below confirms that no external
+result is assumed.
 
 ## Evidence
 
