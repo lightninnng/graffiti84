@@ -834,56 +834,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     (hu' : G.degree u' = 1) (hu'b : G.Adj u' b) : u = u' := by
   by_contra hne
   have hne' : u ≠ u' := hne
-  -- deleting a leaf never disconnects the remaining vertices
-  have hncu : DeleteConnected G u := by
-    intro X Y hX hY
-    obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist X Y
-    refine ⟨w, ?_⟩
-    intro hmem
-    -- the geodesic w is a path; if it contains u internally, the two
-    -- neighbours of u along the path are distinct — impossible for deg 1
-    have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
-    have hwn : w.support.Nodup := hpath.support_nodup
-    -- decompose at u: w = q ++ (u - b) ++ r with q ending at b? Instead:
-    -- positions: u at index i. getVert i-1 and getVert i+1 both adjacent
-    -- to u and distinct (Nodup, u once, i interior since X,Y ≠ u).
-    obtain ⟨q, r, hqr⟩ :=
-      SimpleGraph.Walk.mem_support_iff_exists_append.mp hmem
-    have hqne : ¬q.Nil := fun hnil => hX hnil.eq
-    have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
-    -- q ends at u; its penultimate is a u-neighbour:
-    have hpenAdj : G.Adj u q.penultimate := by
-      have := SimpleGraph.Walk.adj_penultimate hqne
-      exact SimpleGraph.Adj.symm this
-    -- r starts at u with first edge u - r.snd; r.snd is a u-neighbour:
-    obtain ⟨t2, hedge, rt, hrcons⟩ :=
-      SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
-        (u := u) (v := Y) (Ne.symm hY) r
-    have hheadAdj : G.Adj u t2 := hedge
-    -- the two neighbours coincide by degree one:
-    have hsame : q.penultimate = t2 :=
-      adj_eq_of_degree_eq_one hu hpenAdj hheadAdj
-    -- but then u appears twice in w.support (as q's end and as r's head
-    -- with the shared neighbour in between? No: q.penultimate = t2 means
-    -- the vertex BEFORE u equals the vertex AFTER u; by Nodup of w's
-    -- support with u once, positions i-1 = i+1 forces a repeat of that
-    -- neighbour UNLESS the path is u-b-u... which repeats u? The support
-    -- ... x, b, u, b, y ... repeats b — contradicting Nodup. Formalize:
-    -- q.support ++ rt.support has b twice (q.penultimate = b' tail-free).
-    have hsplit : w.support = q.support ++ rt.support := by
-      rw [hqr, hrcons, SimpleGraph.Walk.support_append,
-        SimpleGraph.Walk.support_cons]
-      simp
-    have hb1 : q.penultimate ∈ q.support :=
-      List.mem_of_mem_dropLast
-        (SimpleGraph.Walk.penultimate_mem_dropLast_support hqne)
-    have hb2 : q.penultimate ∈ rt.support := by
-      rw [hsame]
-      exact SimpleGraph.Walk.start_mem_support rt
-    -- two occurrences in the Nodup list w.support: contradiction
-    rw [hsplit] at hwn
-    rw [hsame] at hb1 hb2
-    exact List.nodup_append'.mp hwn |>.2.2 hb1 hb2
+  have hncu : DeleteConnected G u := deleteConnected_of_isLeaf hconn hu
   have h2 : 2 ≤ Fintype.card α := by
     have hne' : u ∉ ({u'} : Finset α) := by simp [hne]
     have h1 : ({u, u'} : Finset α).card = 2 := by

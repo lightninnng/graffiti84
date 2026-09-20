@@ -1122,4 +1122,36 @@ theorem radius_add_one_le_treeNumber {G : SimpleGraph α} [Nonempty α]
   calc G.radius.toNat + 1 = G.dist c y + 1 := by rw [hd]
     _ ≤ treeNumber G := treeNumber_ge_dist_add_one hconn c y
 
+
+/-- A path with endpoints different from a leaf cannot pass through it. -/
+lemma path_avoids_leaf {G : SimpleGraph α} {u x y : α}
+    (hu : G.degree u = 1) {p : G.Walk x y} (hp : p.IsPath)
+    (hx : x ≠ u) (hy : y ≠ u) : u ∉ p.support := by
+  intro hmem
+  obtain ⟨q, r, hqr⟩ := SimpleGraph.Walk.mem_support_iff_exists_append.mp hmem
+  have hqne : ¬q.Nil := fun hnil => hx hnil.eq
+  have hpen : G.Adj u q.penultimate := (q.adj_penultimate hqne).symm
+  obtain ⟨z, huz, rt, hr⟩ :=
+    SimpleGraph.Walk.exists_eq_cons_of_ne (G := G) (u := u) (v := y) hy.symm r
+  have hsame : q.penultimate = z := adj_eq_of_degree_eq_one hu hpen huz
+  have hsplit : p.support = q.support ++ rt.support := by
+    rw [hqr, hr, SimpleGraph.Walk.support_append, SimpleGraph.Walk.support_cons]
+    simp
+  have hzq : q.penultimate ∈ q.support := List.mem_of_mem_dropLast
+    (SimpleGraph.Walk.penultimate_mem_dropLast_support hqne)
+  have hzr : q.penultimate ∈ rt.support := by
+    rw [hsame]
+    exact rt.start_mem_support
+  have hnd := hp.support_nodup
+  rw [hsplit] at hnd
+  rw [hsame] at hzq hzr
+  exact List.nodup_append'.mp hnd |>.2.2 hzq hzr
+
+/-- Deleting a leaf preserves connectivity between all surviving vertices. -/
+lemma deleteConnected_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
+    {u : α} (hu : G.degree u = 1) : DeleteConnected G u := by
+  intro x y hx hy
+  obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist x y
+  exact ⟨p, path_avoids_leaf hu (isPath_of_length_eq_dist hconn hp) hx hy⟩
+
 end Graffiti84

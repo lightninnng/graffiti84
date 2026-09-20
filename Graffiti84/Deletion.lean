@@ -118,4 +118,43 @@ theorem induce_radius_drop_of_central_uep {G : SimpleGraph α} [Nontrivial α]
       (edist_lt_eccent_of_dist_lt hconn (huep.2 x.val hxv))
     _ = G.radius := hc
 
+/-- Deleting a leaf preserves the metric on the surviving vertices. -/
+theorem induce_edist_eq_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
+    {u : α} (hu : G.degree u = 1)
+    (x y : {v // v ∈ Finset.univ.erase u}) :
+    (G.induce (↑(Finset.univ.erase u) : Set α)).edist x y = G.edist x.val y.val := by
+  obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist x.val y.val
+  have havoid := path_avoids_leaf hu (isPath_of_length_eq_dist hconn hp)
+    (Finset.mem_erase.mp x.property).1 (Finset.mem_erase.mp y.property).1
+  apply induce_edist_eq_of_shortest_walk x y p
+  · rw [hp]
+    exact ENat.coe_toNat (SimpleGraph.edist_ne_top_iff_reachable.mpr
+      (hconn.preconnected x.val y.val))
+  · intro z hz
+    exact Finset.mem_erase.mpr ⟨fun hzu => havoid (hzu ▸ hz), Finset.mem_univ z⟩
+
+/-- For leaf deletion, unlike general deletion, restricted and induced
+eccentricities agree. -/
+theorem eccOn_erase_eq_induce_eccent_of_isLeaf {G : SimpleGraph α}
+    (hconn : G.Connected) {u : α} (hu : G.degree u = 1)
+    (c : {v // v ∈ Finset.univ.erase u}) :
+    eccOn G (Finset.univ.erase u) c.val =
+      (G.induce (↑(Finset.univ.erase u) : Set α)).eccent c := by
+  refine le_antisymm (eccOn_le_induce_eccent G _ c) ?_
+  rw [SimpleGraph.eccent]
+  refine iSup_le fun x => ?_
+  rw [induce_edist_eq_of_isLeaf hconn hu c x]
+  exact edist_le_eccOn x.property
+
+/-- The ambient deletion radius equals the actual deletion radius for leaves. -/
+theorem radOn_erase_eq_induce_radius_of_isLeaf {G : SimpleGraph α}
+    (hconn : G.Connected) {u : α} (hu : G.degree u = 1) :
+    radOn G (Finset.univ.erase u) =
+      (G.induce (↑(Finset.univ.erase u) : Set α)).radius := by
+  refine le_antisymm (radOn_le_induce_radius G _) ?_
+  unfold radOn
+  refine le_iInf₂ fun c hc => ?_
+  rw [eccOn_erase_eq_induce_eccent_of_isLeaf hconn hu ⟨c, hc⟩]
+  exact (G.induce (↑(Finset.univ.erase u) : Set α)).radius_le_eccent
+
 end Graffiti84
