@@ -770,8 +770,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have haS : a ∉ S := fun hs => haW ((hSiff a).mp hs).1
   obtain ⟨b, hbS⟩ : ∃ b, b ∉ S := ⟨a, haS⟩
   obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v b
-  have hclosedPi : ∀ (u z : α), u ∈ S → G.Adj z u → z ∈ S :=
-    fun u hu z h => hstep u hu z h
+  have hclosedPi : ∀ (u z : α), u ∈ S → G.Adj u z → z ∈ S :=
+    fun u hu z h => hstep u hu z (SimpleGraph.Adj.symm h)
   exact hbS (walk_end_mem_of_closed hclosedPi w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
