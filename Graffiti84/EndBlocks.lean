@@ -803,20 +803,12 @@ private theorem penultimate_eq_of_leaf_end {G : SimpleGraph α} {b u : α}
 /-- The distance from `c` to a leaf `u` exceeds the distance from `c` to
 its neighbour by at least one. -/
 private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
-    {b u : α} (hu : G.degree u = 1) (hub : G.Adj u b) (c : α) :
+    {b u : α} (hu : G.degree u = 1) (hub : G.Adj u b) {c : α} (hcu : c ≠ u) :
     G.dist c b + 1 ≤ G.dist c u := by
   obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist c u
-  have hbune : b ≠ u := SimpleGraph.Adj.symm hub |>.ne
   have hpne : ¬p.Nil := by
     intro hnil
-    have hcu : c = u := hnil.eq
-    have h1 : G.dist c b + 1 ≤ G.dist c u := by
-      rw [hcu]
-      have h2 : G.dist u b ≤ 1 := dist_le_one_of_adj hub
-      have h3 : G.dist u u = 0 := dist_self' hconn u
-      omega
-    have h0 : G.dist c u = 0 := by rw [hcu]; exact dist_self' hconn u
-    omega
+    exact hcu hnil.eq
   have hsu : G.dist c u = p.length := hp.symm
   have hdrop : G.dist c p.penultimate ≤ p.length - 1 := by
     have h := SimpleGraph.dist_le (p.dropLast)
@@ -845,24 +837,20 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         SimpleGraph.Walk.mem_support_iff_exists_append.mp hum
       have hqne : ¬q.Nil := fun hnil => hX hnil.eq
       have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
-      -- r = cons hedge rt (match-pattern); the leaf forces hedge = u-b
+      -- r = cons hedge rt (match-pattern); the leaf forces the vertex
+      -- after u to be b
       obtain ⟨t2, hedge, rt, hrcons⟩ :=
         SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
         (u := u) (v := Y) (Ne.symm hY) r
       have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
-      -- the first edge of r is u - rt's start; both are u-neighbours, so
-      -- the leaf property forces rt's start = b
-      -- t2 is the vertex after u along r; it is a u-neighbour, so = b
       have hrb : t2 = b := by
         cases rt with
         | nil =>
             -- r = u -> Y single edge: hedge : G.Adj u Y and t2 = Y
-            have hYt : t2 = Y := rfl
-            have hyb : Y = b :=
-              adj_eq_of_degree_eq_one hu hedge (SimpleGraph.Adj.symm hub)
-            rw [hYt, hyb]
+            rw [adj_eq_of_degree_eq_one hu hedge hbu]
+            rfl
         | cons h2 t2' =>
-            rw [adj_eq_of_degree_eq_one hu hedge (SimpleGraph.Adj.symm hub)]
+            rw [adj_eq_of_degree_eq_one hu hedge hbu]
             rfl
       -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u
       refine ⟨(q.dropLast.append rt), ?_⟩
@@ -953,8 +941,12 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       omega
     omega
   -- u' also sits at distance r - 1 + 1 = r from c_u, contradicting UEP
-  have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
-    dist_leaf_ge hconn hu' hu'b c_u
+  have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' := by
+    have hcne : c_u ≠ u' := by
+      intro e
+      rw [e] at hdcu
+      omega
+    exact dist_leaf_ge hconn hu' hu'b hcne
   have hlt := huepu.2 u' hne'
   omega
 
