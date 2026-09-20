@@ -246,6 +246,7 @@ theorem nonleaf_core_radius_decreasing {G : SimpleGraph α} [Nontrivial α]
   have hcS := central_mem_nonleafSet hconn hn3 hc
   let H := G.induce (nonleafSet G : Set α)
   let cS : {v // v ∈ nonleafSet G} := ⟨c, hcS⟩
+  haveI : Nonempty {v // v ∈ nonleafSet G} := ⟨w⟩
   have hH : H.Connected := nonleaf_induce_connected hconn ⟨c, hcS⟩
   have hHtop : H.radius ≠ ⊤ := by
     obtain ⟨x, y, hxy⟩ := H.exists_edist_eq_radius_of_finite
@@ -289,7 +290,7 @@ theorem nonleaf_core_radius_decreasing {G : SimpleGraph α} [Nontrivial α]
     refine iSup_le fun x => ?_
     have hnat : H.dist cS x ≤ H.radius.toNat := by
       by_cases hx : x = w
-      · simpa only [hx, hdw]
+      · subst x; exact le_of_eq hdw
       · exact le_of_lt (hstrict x hx)
     rw [← (hH.preconnected cS x).coe_dist_eq_edist, ← ENat.coe_toNat hHtop]
     exact ENat.coe_le_coe.mpr hnat
