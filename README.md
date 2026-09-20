@@ -5,48 +5,40 @@ Pinned environment:
 - Lean `v4.32.2`
 - Mathlib `v4.32.2`
 
-## First local run
+## Verification in GitHub Actions
 
-```bash
-lake update
-lake exe cache get
-lake build
-```
+Lean runs in the GitHub-hosted Ubuntu runner in `.github/workflows/ci.yml`.
+The local workspace is used for editing and reading Mathlib source only.
+Pushes to `main` or `codex/**` run dependency resolution, Mathlib cache fetch
+(with retries), `lake build`, source auditing, and declaration axiom reports.
 
-For faster diagnosis, compile layer by layer:
+## Formalization status
 
-```bash
-lake build Graffiti84.RadiusCriticalStructure
-lake build Graffiti84.LeafLemma
-lake build Graffiti84.GraphConjecture84
-```
+The full conjecture is **not yet formalized**. A successful build checks the
+implemented declarations, not the existence of the final theorem.
 
-If the first command reports an API mismatch, send the complete terminal
-output back to ChatGPT.  Fix the first failing layer before continuing.
+Implemented components include:
+
+- `BasicFacts`: geodesics, induced-tree size, ambient-distance bookkeeping.
+- `RootedChung`: a rooted induced-tree witness on at least `2r - 1` vertices.
+- `Deletion`: comparison with genuine induced-subgraph radii and both UEP
+  radius-drop directions.
+- `EndBlocks`: non-cut vertices, unique leaf neighbours, and Case B's
+  non-cut closure without block decomposition.
+- `CaseB`: self-centrality, the exceptional UEP witness, and the rooted tree.
+- `LeafLemma`: induced-tree leaf extension and counting.
+- `GraphConjecture84`: the minimum-degree-at-least-two branch.
+
+Remaining: Case A's peeling/structure induction; induced-subgraph bookkeeping
+for the minimal-counterexample induction; `leafLemma`; and the unconditional
+`graphConjecture84` declaration. The mathematical manuscript is a proof draft,
+not a substitute for those missing Lean declarations.
 
 ## Integrity rule
 
 This project intentionally contains no `sorry`, `admit`, or custom `axiom`.
 Undeveloped major theorems are left as comments/TODO targets, not fake theorem
 declarations.
-
-## Target architecture
-
-1. `RadiusCriticalStructure.lean`
-   - radius deletion / unique-eccentric-point machinery
-   - rooted Chung helper
-   - theorem-specific vrd cut-vertex structure theorem
-
-2. `LeafLemma.lean`
-   - minimum-counterexample two-case proof
-   - final theorem `leafLemma`
-
-3. `GraphConjecture84.lean`
-   - minimum-degree split
-   - final theorem for Graffiti.pc #84
-
-The current snapshot is a local-compilation starting point, not yet a claim
-that the full theorem has been kernel-certified.
 
 ## Docs
 

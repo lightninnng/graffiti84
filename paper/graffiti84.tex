@@ -118,8 +118,8 @@ Consequently $t(G)\ge 2\,r(G)$
 Classically this is due to Gliviak~\cite{Gliviak1976} (see also the survey
 \cite{Gliviak2000}, Theorem~4, and Swart~\cite[Theorem~2.2.10]{Swart1996}),
 with an ingredients credited to Fajtlowicz~\cite{Fajtlowicz1988}.  Here we
-prove Theorem~\ref{thm:vrd} from scratch (Section~\ref{sec:vrd}); only
-elementary block-cutvertex facts (Fact~\ref{fact:blocks}) are presupposed.
+prove Theorem~\ref{thm:vrd} from scratch (Section~\ref{sec:vrd}).
+The non-cut-vertex argument below uses paths directly, without a block tree.
 The proof of the leaf lemma also uses a \emph{rooted} form of Chung's
 induced-path construction (Lemma~\ref{lem:rooted-chung}), proved in full in
 Section~\ref{sec:chung}, including two details that are usually left implicit.
@@ -260,18 +260,6 @@ $\deg(x)\ge2$), so $N(w)=\{z\}$; applying the hypothesis to $w$ forces
 $\deg(z)=1$, contradicting $z$ being adjacent to the two distinct vertices
 $x$ and $w$.
 \end{proof}
-
-\begin{fact}[Block-cutvertex facts]\label{fact:blocks}
-In a connected graph with at least one cut vertex: blocks and the
-block--cutvertex tree are well defined; there is an \emph{end block} (a block
-containing exactly one cut vertex $c$); every vertex of an end block other
-than $c$ is a non-cut vertex of the whole graph; and if the graph has
-minimum degree at least two, an end block is not a bridge $K_2$, so the end
-block is $2$-connected and $c$ has at least two neighbours inside it.
-\end{fact}
-
-These are standard; see any graph theory text.  They are the only block-level
-facts used anywhere below.
 
 \section{The rooted Chung lemma}\label{sec:chung}
 
@@ -619,19 +607,19 @@ $a$, and Corollary~\ref{cor:vrd-tree} gives $t(G)\ge2r$ --- a contradiction.
       Lemma~\ref{lem:drop1} (as $r(H)=r$ and $v$ is a non-cut vertex of
       $H$).
 \item[Claim 4.] $H$ has no cut vertex.
-      Suppose $c$ is one.  Let $B_0$ be an end block of $H$ with cut vertex
-      $c$ (Fact~\ref{fact:blocks}).  If $B_0=K_2$, say $\{c,w\}$, then $w$
-      has no $H$-edge outside $B_0$ (else $w$ would be a cut vertex, but an
-      end block contains only the one), so $\deg_H(w)=1$, contradicting
-      Claim 2.  Hence $B_0$ is 2-connected and $c$ has at least two
-      neighbours in $B_0$; at most one of them is $a$, so we may pick
-      $v\ne a$.  Then $v$ is a non-cut vertex of $H$
-      (Fact~\ref{fact:blocks}) with $\deg_H(v)\ge2$ (Claim 2).  By Claim 3
-      and Lemma~\ref{lem:dropuep}, $v$ is the UEP of a central vertex $z$ of
-      $H$; by the degree-$\ge2$ half of Proposition~\ref{prop:ncvleaf}'s
-      proof (whose first bullet applies verbatim in $H$), every neighbour of
-      $v$ is a non-cut vertex of $H$.  But $c\sim v$, so $c$ is a non-cut
-      vertex --- contradicting the choice of $c$.
+      Claims 2 and 3 and Lemma~\ref{lem:dropuep} imply that every non-cut
+      vertex $v\ne a$ is a central vertex's UEP and has degree at least two.
+      The neighbour argument in Proposition~\ref{prop:ncvleaf} therefore
+      shows that every neighbour of $v$ is also a non-cut vertex.
+      Choose a non-cut vertex $v\ne a$; two distinct non-cut vertices exist
+      by the longest-path argument.
+      If $a$ were a cut vertex, the non-cut property would propagate along
+      any path starting at $v$: a non-cut vertex can never equal $a$, so
+      the neighbour implication applies at every step. A path from $v$
+      to $a$ would give a contradiction. Thus $a$ is a non-cut vertex.
+      For any $w\ne a$, choose a $v$--$w$ path in the connected graph $H-a$.
+      Propagating the same implication along this path shows that $w$
+      is a non-cut vertex. Hence every vertex of $H$ is a non-cut vertex.
 \end{description}
 
 By Claim 4 every vertex of $H$ is a non-cut vertex.  For each $v\ne a$,
@@ -701,11 +689,13 @@ The proof decomposes into Lean modules as follows.
 \item the leaf lemma (Section~\ref{sec:leaf});
 \item the arithmetic assembly (Theorem~\ref{thm:main}).
 \end{enumerate}
-The only prerequisite beyond basic distance calculus is
-Fact~\ref{fact:blocks} (existence of end blocks and non-cut vertices inside
-them), which must be built explicitly in a formalization.  A companion Lean
-package accompanies this manuscript; the semantic proof ledger is kept in
-\texttt{docs/full-proof.md} of that repository.
+The Case B non-cut argument now uses only paths and the existence of two
+non-cut vertices, eliminating the former block-tree prerequisite.
+The companion Lean package is incomplete: the Case A peeling induction,
+the minimal-counterexample assembly, and the final graph theorem are not
+yet kernel-certified. Implemented declarations and their axiom dependencies
+are checked in GitHub Actions. The proof ledger is kept in
+\texttt{docs/full-proof.md}.
 
 \begin{thebibliography}{9}
 
