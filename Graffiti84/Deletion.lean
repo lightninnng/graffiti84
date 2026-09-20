@@ -169,7 +169,7 @@ theorem connected_induce_erase_iff {G : SimpleGraph α} [Nontrivial α] (v : α)
     obtain ⟨p⟩ := hconn.preconnected xS yS
     refine ⟨p.map f, ?_⟩
     intro hmem
-    rw [SimpleGraph.Walk.support_map] at hmem
+    rw [SimpleGraph.Walk.support_map f p] at hmem
     obtain ⟨z, _, hz⟩ := List.mem_map.mp hmem
     exact (Finset.mem_erase.mp z.property).1 hz
   · intro hdel
