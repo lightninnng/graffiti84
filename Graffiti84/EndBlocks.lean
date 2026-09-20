@@ -848,32 +848,22 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       -- r = cons hedge rt (match-pattern); the leaf forces hedge = u-b
       obtain ⟨t2, hedge, rt, hrcons⟩ :=
         SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
-        (u := u) (v := Y) (fun e => hY e) r
+        (u := u) (v := Y) (Ne.symm hY) r
       have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
       -- the first edge of r is u - rt's start; both are u-neighbours, so
       -- the leaf property forces rt's start = b
-      have hrb : rt.start = b := by
-        by_cases hrt : rt.Nil
-        · -- rt nil: r is the single edge u -> Y, so Y is u's neighbour;
-          -- the leaf property forces Y = b and rt.start = Y = b
-          have hy' : Y = rt.start := by
-            cases rt with
-            | nil => rfl
-            | cons h2 t2' => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
-          have h2adj : G.Adj u Y := by
-            rw [hy']
-            cases rt with
-            | nil => exact hedge
-            | cons h2 t2' => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
-          have hyb : Y = b :=
-            adj_eq_of_degree_eq_one hu h2adj (SimpleGraph.Adj.symm hub)
-          rw [hy', hyb]
-        · have h2adj : G.Adj u rt.start := by
-            cases rt with
-            | nil => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
-            | cons h2 t2' => exact hedge
-          rw [adj_eq_of_degree_eq_one hu h2adj (SimpleGraph.Adj.symm hub)]
-          rfl
+      -- t2 is the vertex after u along r; it is a u-neighbour, so = b
+      have hrb : t2 = b := by
+        cases rt with
+        | nil =>
+            -- r = u -> Y single edge: hedge : G.Adj u Y and t2 = Y
+            have hYt : t2 = Y := rfl
+            have hyb : Y = b :=
+              adj_eq_of_degree_eq_one hu hedge (SimpleGraph.Adj.symm hub)
+            rw [hYt, hyb]
+        | cons h2 t2' =>
+            rw [adj_eq_of_degree_eq_one hu hedge (SimpleGraph.Adj.symm hub)]
+            rfl
       -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u
       refine ⟨(q.dropLast.append rt), ?_⟩
       intro z hz
@@ -929,7 +919,6 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         omega
       · -- z ∈ rt.support: u is only r's head, not in rt.support
         have hts : rt.support = (SimpleGraph.Walk.cons hedge rt).support.tail := by
-          rw [hedgeq]
           simp [SimpleGraph.Walk.support_cons]
         have hsub : z ∈ (SimpleGraph.Walk.cons hedge rt).support := by
           rw [hts] at h2
