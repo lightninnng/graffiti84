@@ -818,7 +818,10 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
       SimpleGraph.Walk.length_dropLast p] at h
     rw [hpen] at h
     exact h
-  omega
+  have hlen : p.length - 1 + 1 = p.length := by omega
+  calc G.dist c b + 1 ≤ p.length - 1 + 1 := by omega
+    _ = p.length := hlen
+    _ = G.dist c u := hsu.symm
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
 distinct leaves. -/
@@ -845,7 +848,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       obtain ⟨t2, hedge, rt, hrcons⟩ :=
         SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
         (u := u) (v := Y) (Ne.symm hY) r
-      have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
+      have hbu : G.Adj u b := hub
       have hrb : t2 = b :=
         adj_eq_of_degree_eq_one hu hedge hbu
       -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u.
