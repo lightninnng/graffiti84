@@ -816,8 +816,7 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.Walk.length_dropLast p
   have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
     SimpleGraph.dist_le (p.dropLast)
-  have hbeq : G.dist c b = G.dist c p.penultimate := by
-    rw [hpen]
+  rw [hpen]
   have hfin : G.dist c b + 1 ≤ p.length := by omega
   omega
 
@@ -854,8 +853,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hqpen : q.penultimate = b :=
         penultimate_eq_of_leaf_end hu hub q hqne
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      refine ⟨((q.dropLast).copy rfl hpend).append rt, ?_⟩
-      intro z hz
+      refine ⟨((q.dropLast).copy rfl hpend).append rt, fun z hz => ?_⟩
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
       rcases hz with h1 | h2
       · -- z ∈ q.dropLast.support ⊆ q.support, and z ≠ u
@@ -934,6 +932,19 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     hconn h2 (hmono u hncu)
   -- d(c_u, b) = r - 1 and d(c_u, u) = r
   have hdcu : G.dist c_u u = (G.eccent c_u).toNat := huepu.1
+  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
+    have hrle : G.radius ≤ G.eccent c_u := G.radius_le_eccent
+    have hne : G.radius ≠ ⊤ := by
+      obtain ⟨x, y, hxy⟩ := G.exists_edist_eq_radius_of_finite
+      rw [← hxy]
+      exact SimpleGraph.edist_ne_top_iff_reachable.mpr
+        (hconn.preconnected x y)
+    have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hne
+    have hmon : ((G.radius.toNat : ℕ) : ℕ∞) ≤ ((G.eccent c_u).toNat : ℕ∞) := by
+      rw [hcoe]
+      exact hrle
+    have hr2' : 2 ≤ G.radius.toNat := hr2
+    omega
   have hdcb : G.dist c_u b + 1 = (G.eccent c_u).toNat := by
     have h1 : G.dist c_u u ≤ G.dist c_u b + 1 := by
       have htr := hconn.dist_triangle (u := c_u) (v := b) (w := u)
@@ -941,13 +952,23 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         dist_le_one_of_adj (SimpleGraph.Adj.symm hub)
       omega
     omega
-  -- u' also sits at distance r - 1 + 1 = r from c_u, contradicting UEP
+  -- u' also sits at distance ≥ (r-1)+1 from c_u: any c_u-u' walk ends
+  -- with the unique leaf edge b-u'
+  have hb'u : b ≠ u' := by
+    intro e
+    rw [e] at hub
+    exact hne' (adj_eq_of_degree_eq_one hu' hub (SimpleGraph.Adj.symm hu'b))
+  have hb'u2 : u' ≠ b := Ne.symm hb'u
   have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' := by
     have hcne : c_u ≠ u' := by
       intro e
-      rw [e] at hdcu
+      -- c_u = u' would put b at distance ecc - 1 from the leaf u', i.e.
+      -- dist u' b = ecc - 1, but dist u' b ≤ 1 < ecc - 1 (r ≥ 2)
+      rw [e] at hlt2 ⊢
       omega
     exact dist_leaf_ge hconn hu' hu'b hcne
+  -- final counting: dist c_u b + 1 = ecc, yet dist c_u u' < ecc (UEP) —
+  -- contradiction
   have hlt := huepu.2 u' hne'
   omega
 
