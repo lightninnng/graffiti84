@@ -814,10 +814,12 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     penultimate_eq_of_leaf_end hu hub p hpne
   have hlen : p.dropLast.length = p.length - 1 :=
     SimpleGraph.Walk.length_dropLast p
-  have hdrop : G.dist c b ≤ p.dropLast.length := by
-    have h := SimpleGraph.dist_le (p.dropLast)
+  have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
+    SimpleGraph.dist_le (p.dropLast)
+  have hfin : G.dist c b + 1 ≤ p.length := by
+    have h := hdrop
     rw [hpen] at h
-    exact h
+    omega
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
