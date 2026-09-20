@@ -812,16 +812,13 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have hsu : G.dist c u = p.length := hp.symm
   have hpen : p.penultimate = b :=
     penultimate_eq_of_leaf_end hu hub p hpne
-  have hdrop : G.dist c b ≤ p.length - 1 := by
+  have hlen : p.dropLast.length = p.length - 1 :=
+    SimpleGraph.Walk.length_dropLast p
+  have hdrop : G.dist c b ≤ p.dropLast.length := by
     have h := SimpleGraph.dist_le (p.dropLast)
-    rw [show p.dropLast.length = p.length - 1 from
-      SimpleGraph.Walk.length_dropLast p] at h
     rw [hpen] at h
     exact h
-  calc G.dist c b + 1 ≤ (p.length - 1) + 1 := by omega
-    _ = p.length := Nat.sub_one_add_one (Nat.succ_le_of_lt
-      (by have := SimpleGraph.Walk.length_dropLast p; omega))
-    _ = G.dist c u := hsu.symm
+  omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
 distinct leaves. -/
@@ -856,7 +853,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hqpen : q.penultimate = b :=
         penultimate_eq_of_leaf_end hu hub q hqne
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      refine ⟨((q.dropLast).copy rfl (hpend.symm)).append rt, ?_⟩
+      refine ⟨((q.dropLast).copy rfl hpend).append rt, ?_⟩
       intro z hz
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
       rcases hz with h1 | h2
@@ -925,15 +922,11 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         exact h2 hzu
     · exact ⟨w, hum⟩
   have h2 : 2 ≤ Fintype.card α := by
-    refine le_trans (s := ({u, u'} : Finset α)).card_le_of_subset
-      (Finset.subset_univ _) |>.trans ?_
     have hne' : u ∉ ({u'} : Finset α) := by simp [hne]
     have h1 : ({u, u'} : Finset α).card = 2 := by
       rw [Finset.card_insert_of_notMem hne', Finset.card_singleton]
-    have h2 : ({u} : Finset α).card = 1 := rfl
-    have hsub := Finset.card_le_card (s := ({u} : Finset α))
-      (Finset.singleton_subset_iff.mpr (Finset.mem_insert_self _ _))
-    simp at hsub
+    have hsub := Finset.card_le_card (s := ({u, u'} : Finset α))
+      (Finset.subset_univ _)
     omega
   obtain ⟨c_u, hcen, huepu⟩ := isUniqueEccentricPoint_of_radOn_erase
     hconn h2 (hmono u hncu)
