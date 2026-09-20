@@ -838,72 +838,54 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   have hncu : DeleteConnected G u := by
     intro X Y hX hY
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist X Y
-    by_cases hum : u ∈ w.support
-    · -- decompose at u and splice through the unique leaf edge, skipping u
-      obtain ⟨q, r, hqr⟩ :=
-        SimpleGraph.Walk.mem_support_iff_exists_append.mp hum
-      have hqne : ¬q.Nil := fun hnil => hX hnil.eq
-      have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
-      -- r = cons hedge rt (match-pattern); the leaf forces the vertex
-      -- after u to be b
-      obtain ⟨t2, hedge, rt, hrcons⟩ :=
-        SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
+    refine ⟨w, ?_⟩
+    intro hmem
+    -- the geodesic w is a path; if it contains u internally, the two
+    -- neighbours of u along the path are distinct — impossible for deg 1
+    have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
+    have hwn : w.support.Nodup := hpath.support_nodup
+    -- decompose at u: w = q ++ (u - b) ++ r with q ending at b? Instead:
+    -- positions: u at index i. getVert i-1 and getVert i+1 both adjacent
+    -- to u and distinct (Nodup, u once, i interior since X,Y ≠ u).
+    obtain ⟨q, r, hqr⟩ :=
+      SimpleGraph.Walk.mem_support_iff_exists_append.mp hmem
+    have hqne : ¬q.Nil := fun hnil => hX hnil.eq
+    have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
+    -- q ends at u; its penultimate is a u-neighbour:
+    have hpenAdj : G.Adj u q.penultimate := by
+      have := SimpleGraph.Walk.adj_penultimate hqne
+      exact SimpleGraph.Adj.symm this
+    -- r starts at u with first edge u - r.snd; r.snd is a u-neighbour:
+    obtain ⟨t2, hedge, rt, hrcons⟩ :=
+      SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
         (u := u) (v := Y) (Ne.symm hY) r
-      have hbu : G.Adj u b := hub
-      have hrb : t2 = b :=
-        adj_eq_of_degree_eq_one hu hedge hbu
-      -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u.
-      -- Need q.penultimate = b: it is the leaf property of q's endpoint u.
-      have hqpen : q.penultimate = b :=
-        penultimate_eq_of_leaf_end hu hub q hqne
-      have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      refine ⟨((q.dropLast).copy rfl hpend).append rt, ?_⟩
-      intro hmem
-      rw [SimpleGraph.Walk.support_append, List.mem_append,
-        SimpleGraph.Walk.support_copy] at hmem
-      rcases hmem with h1 | h2
-      · -- u ∈ dropLast.support of q, i.e. at a non-final slot of q.support
-        rw [SimpleGraph.Walk.support_dropLast hqne] at h1
-        -- u is q's terminal vertex; the geodesic path property forbids it
-        have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
-        have hwn : w.support.Nodup := hpath.support_nodup
-        have hsplit : w.support = q.support ++ rt.support := by
-          rw [hqr, hrcons, SimpleGraph.Walk.support_append,
-            SimpleGraph.Walk.support_cons]
-          simp
-        have hqnd : q.support.Nodup :=
-          hsplit ▸ hwn |>.of_append_left
-        have huin : u ∈ q.support :=
-          List.mem_of_mem_dropLast h1
-        have hidx1 : q.support.idxOf u = q.support.length - 1 := by
-          -- u is the LAST element of q.support (q is a walk ending at u);
-          -- by Nodup, u occurs only there, so its index is length - 1
-          have hmem2 : u ∈ q.support := huin
-          have hnotin : u ∉ q.support.dropLast := h1
-          have := List.mem_dropLast_iff_idxOf_lt hmem2
-          have hlt : q.support.idxOf u < q.support.length :=
-            List.idxOf_lt_length_of_mem hmem2
-          by_contra hc
-          omega
-        rw [List.mem_dropLast_iff_idxOf_lt huin] at h1
-        omega
-      · -- u ∈ rt.support would put u twice in r's support (head + here),
-        -- contradicting the geodesic's nodup
-        -- u ∈ q.support (join vertex) but u ∉ rt.support by geodesic
-        have huq : u ∈ q.support := List.mem_append_left _ rfl
-        have hurt : u ∉ rt.support := by
-          intro heq
-          rw [hsplit] at heq
-          rcases List.mem_append.mp heq with e | e
-          · exact hqnd (e ▸ huq)
-          · exact e
-        have hrs : r.support = u :: rt.support := by
-          rw [hrcons]
-          simp [SimpleGraph.Walk.support_cons]
-        have hin : u ∈ r.support := by
-          rw [hrs]
-          exact List.mem_cons_self .. |>.resolve_right h2
-        exact hrnd hin
+    have hheadAdj : G.Adj u t2 := hedge
+    -- the two neighbours coincide by degree one:
+    have hsame : q.penultimate = t2 :=
+      adj_eq_of_degree_eq_one hu hpenAdj hheadAdj
+    -- but then u appears twice in w.support (as q's end and as r's head
+    -- with the shared neighbour in between? No: q.penultimate = t2 means
+    -- the vertex BEFORE u equals the vertex AFTER u; by Nodup of w's
+    -- support with u once, positions i-1 = i+1 forces a repeat of that
+    -- neighbour UNLESS the path is u-b-u... which repeats u? The support
+    -- ... x, b, u, b, y ... repeats b — contradicting Nodup. Formalize:
+    -- q.support ++ rt.support has b twice (q.penultimate = b' tail-free).
+    have hsplit : w.support = q.support ++ rt.support := by
+      rw [hqr, hrcons, SimpleGraph.Walk.support_append,
+        SimpleGraph.Walk.support_cons]
+      simp
+    have hb1 : q.penultimate ∈ q.support :=
+      SimpleGraph.Walk.penultimate_mem_dropLast_support hqne |>.trans
+        (by rw [SimpleGraph.Walk.support_dropLast hqne]
+            exact List.mem_of_mem_dropLast ·)
+    have hb2 : q.penultimate ∈ rt.support := by
+      rw [hsame]
+      exact SimpleGraph.Walk.start_mem_support rt
+    -- two occurrences in the Nodup list w.support: contradiction
+    rw [hsplit] at hwn ⊢
+    exact hwn (by
+      rw [hsame] at hb1
+      exact List.mem_append_two _ hb1 hb2 |>.elim)
     · exact ⟨w, hum⟩
   have h2 : 2 ≤ Fintype.card α := by
     have hne' : u ∉ ({u'} : Finset α) := by simp [hne]
