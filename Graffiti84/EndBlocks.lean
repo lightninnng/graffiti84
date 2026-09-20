@@ -810,6 +810,8 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     intro hnil
     exact hcu hnil.eq
   have hsu : G.dist c u = p.length := hp.symm
+  have hpen : p.penultimate = b :=
+    penultimate_eq_of_leaf_end hu hub p hpne
   have hdrop : G.dist c p.penultimate ≤ p.length - 1 := by
     have h := SimpleGraph.dist_le (p.dropLast)
     rw [show p.dropLast.length = p.length - 1 from
@@ -843,16 +845,14 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
         (u := u) (v := Y) (Ne.symm hY) r
       have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
-      have hrb : t2 = b := by
-        cases rt with
-        | nil =>
-            -- r = u -> Y single edge: hedge : G.Adj u Y and t2 = Y
-            rw [adj_eq_of_degree_eq_one hu hedge hbu]
-            rfl
-        | cons h2 t2' =>
-            rw [adj_eq_of_degree_eq_one hu hedge hbu]
-            rfl
-      -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u
+      have hrb : t2 = b :=
+        adj_eq_of_degree_eq_one hu hedge hbu
+      -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u.
+      -- Need q.penultimate = b: it is the leaf property of q's endpoint u.
+      have hqpen : q.penultimate = b :=
+        penultimate_eq_of_leaf_end hu hub q hqne
+      have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
+      rw [hpend]
       refine ⟨(q.dropLast.append rt), ?_⟩
       intro z hz
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
