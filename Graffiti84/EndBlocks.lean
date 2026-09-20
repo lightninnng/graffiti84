@@ -810,14 +810,17 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have hpne : ¬p.Nil := by
     intro hnil
     have hcu : c = u := hnil.eq
-    have h0 : G.dist c b = 0 := by
-      rw [hcu, SimpleGraph.dist_comm]
+    rw [hcu] at *
+    have hb : G.dist b u = 0 := by
+      rw [SimpleGraph.dist_comm u b]
       exact dist_self' hconn b
     omega
-  have htake := SimpleGraph.dist_le (p.dropLast)
-  rw [show p.dropLast.length = p.length - 1 from
-    SimpleGraph.Walk.length_dropLast p] at htake
   have hsu : G.dist c u = p.length := hp.symm
+  have hdrop : G.dist c p.penultimate ≤ p.length - 1 := by
+    have h := SimpleGraph.dist_le (p.dropLast)
+    rw [show p.dropLast.length = p.length - 1 from
+      SimpleGraph.Walk.length_dropLast p] at h
+    exact h
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -830,10 +833,111 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     (hu' : G.degree u' = 1) (hu'b : G.Adj u' b) : u = u' := by
   by_contra hne
   have hne' : u ≠ u' := hne
-  -- F8 applies to the non-cut leaf u (radius-drop bookkeeping)
+  -- deleting a leaf never disconnects the remaining vertices
   have hncu : DeleteConnected G u := by
-    by_contra hcut
-    exact hcut (radOn_erase_le_radOn_of_isLeaf hconn hu hub (by omega))
+  have hncu : DeleteConnected G u := by
+    intro X Y hX hY
+    obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist X Y
+    by_cases hum : u ∈ w.support
+    · -- decompose at u and splice through the unique leaf edge, skipping u
+      obtain ⟨q, r, hqr⟩ :=
+        SimpleGraph.Walk.mem_support_iff_exists_append.mp hum
+      have hqne : ¬q.Nil := fun hnil => hX hnil.eq
+      have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
+      -- r = cons hedge rt; the leaf forces the first edge to be u-b
+      obtain ⟨hedge, rt⟩ := r
+      have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
+      have hedgeq : hedge = hbu := by
+        have h1 : G.Adj u hedge.to_start := hedge
+        by_cases hrt : rt.Nil
+        · -- rt nil: r = u -> hedge.to_start = Y, and Y ≠ u
+          have hy : hedge.to_start = Y := by
+            cases rt with
+            | nil => rfl
+            | cons h2 t2 => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
+          have hne : hedge.to_start ≠ u := by
+            intro e
+            rw [e] at hy
+            exact hY hy.symm
+          rw [adj_eq_of_degree_eq_one hu h1 (SimpleGraph.Adj.symm hub)]
+          exact hne
+        · -- rt non-nil: rt.start is a neighbour of u, hence = b
+          have h2adj : G.Adj u rt.start := by
+            cases rt with
+            | nil => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
+            | cons h2 t2 => exact hedge
+          rw [adj_eq_of_degree_eq_one hu h2adj (SimpleGraph.Adj.symm hub)]
+          rfl
+      -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u
+      refine ⟨(q.dropLast.append rt), ?_⟩
+      intro z hz
+      rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
+      rcases hz with h1 | h2
+      · -- z ∈ q.dropLast.support ⊆ q.support, and z ≠ u
+        have hsub : z ∈ q.support := by
+          rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
+          exact List.mem_of_mem_dropLast h1
+        have hzw : z ∈ w.support := by
+          rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
+          exact Or.inl hsub
+        refine ⟨hzw, ?_⟩
+        intro hzu
+        -- w is a geodesic, hence a path; u occupies exactly one slot in
+        -- q.support (its last element), so it cannot sit in the dropLast
+        have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
+        have hwn : w.support.Nodup := hpath.support_nodup
+        have hqnd : q.support.Nodup := by
+          have hsub' : q.support <+: w.support := by
+            rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
+            exact List.sublist_append_left _ _
+          exact List.Nodup.sublist hsub' hwn
+        -- q's support ends with u (q is a walk ending at u)
+        have huin : u ∈ q.support := by
+          have hdl2 := SimpleGraph.Walk.support_dropLast q hqne
+          rw [hdl2] at h1
+          exact List.mem_of_mem_dropLast h1
+        -- last element of q.support is u
+        have hlast : q.support.getLastD u = u := by
+          cases q with
+          | nil => exact absurd (by simp) hqne
+          | cons h' t' =>
+              rw [← SimpleGraph.Walk.support_cons]
+              simp
+        have hnd := hqnd
+        -- nodup + last = u forces idxOf u = length - 1
+        have hidx1 : q.support.idxOf u = q.support.length - 1 := by
+          have hmemL : u ∈ q.support := huin
+          have hlt := List.idxOf_lt_length_of_mem hmemL
+          have hv := List.getElem_idxOf hmemL
+          have hj : q.support[q.support.length - 1] = u := by
+            cases q with
+            | nil => exact absurd (by simp) hqne
+            | cons h' t' =>
+                rw [← SimpleGraph.Walk.support_cons] at *
+                simp
+          have := (hnd.getElem_inj_iff).mp (hj.symm.trans hv)
+          rw [this] at *
+          omega
+        have hdl2 := SimpleGraph.Walk.support_dropLast q hqne
+        rw [hdl2, List.mem_dropLast_iff_idxOf_lt huin] at h1
+        omega
+      · -- z ∈ rt.support: u is only r's head, not in rt.support
+        have hts : rt.support = (SimpleGraph.Walk.cons hedge rt).support.tail := by
+          rw [hedgeq]
+          simp [SimpleGraph.Walk.support_cons]
+        have hsub : z ∈ (SimpleGraph.Walk.cons hedge rt).support := by
+          rw [hts] at h2
+          exact List.mem_of_mem_tail h2
+        have hzw : z ∈ w.support := by
+          rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
+          exact Or.inr hsub
+        refine ⟨hzw, ?_⟩
+        intro hzu
+        rw [hzu] at h2
+        rw [hts] at h2
+        simp [List.mem_cons] at h2
+        exact h2 hzu
+    · exact ⟨w, hum⟩
   have h2 : 2 ≤ Fintype.card α := by
     obtain ⟨z, hz⟩ := exists_ne u
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
