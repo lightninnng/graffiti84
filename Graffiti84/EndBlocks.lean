@@ -816,9 +816,10 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.Walk.length_dropLast p
   have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
     SimpleGraph.dist_le (p.dropLast)
-  rw [hpen]
-  exact Nat.succ_le_succ (SimpleGraph.dist_le (p.dropLast) |>.trans
-    (by rw [hlen]))
+  have hbeq : G.dist c b = G.dist c p.penultimate := by rw [hpen]
+  have h := SimpleGraph.dist_le (p.dropLast)
+  rw [hlen] at h
+  omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
 distinct leaves. -/
@@ -859,7 +860,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         SimpleGraph.Walk.support_copy] at hmem
       rcases hmem with h1 | h2
       · -- u ∈ dropLast.support of q, i.e. at a non-final slot of q.support
-        rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
+        have hqne' := hqne
+        rw [SimpleGraph.Walk.support_dropLast q hqne'] at h1
         have hzu : u ∈ q.support.dropLast := h1
         -- u is q's terminal vertex; the geodesic path property forbids it
         have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
@@ -890,26 +892,18 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         omega
       · -- u ∈ rt.support would put u twice in r's support (head + here),
         -- contradicting the geodesic's nodup
-        have hts : rt.support = (SimpleGraph.Walk.cons hedge rt).support.tail := by
-          simp [SimpleGraph.Walk.support_cons]
-        have hsub : u ∈ (SimpleGraph.Walk.cons hedge rt).support := by
-          rw [hts] at h2
-          exact List.mem_of_mem_tail h2
-        have hzw : u ∈ w.support := by
-          rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
-          exact Or.inr hsub
-        have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
-        have hwn : w.support.Nodup := hpath.support_nodup
-        have hqnd : q.support.Nodup := by
-          have hsub' : q.support <+: w.support := by
-            rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
-            exact List.sublist_append_left _ _
-          exact List.Nodup.sublist hsub' hwn
         have hrnd : r.support.Nodup := by
           have hsub' : r.support <+: w.support := by
             rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
             exact List.sublist_append_right _ _
           exact List.Nodup.sublist hsub' hwn
+        have hrs : r.support = u :: rt.support := by
+          rw [hrcons]
+          simp [SimpleGraph.Walk.support_cons]
+        have hin : u ∈ r.support := by
+          rw [hrs]
+          exact List.mem_cons_self .. |>.resolve_right h2
+        exact hrnd hin
         have hrs : r.support = hedge.to_target :: rt.support := by
           simp [hrcons, SimpleGraph.Walk.support_cons]
         rw [hrs] at hrnd
