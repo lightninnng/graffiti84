@@ -1016,14 +1016,15 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     rw [e] at hub
     exact hne' (adj_eq_of_degree_eq_one hu' hub (SimpleGraph.Adj.symm hu'b))
   have hb'u2 : u' ≠ b := Ne.symm hb'u
-  have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' := by
-    have hcne : c_u ≠ u' := by
-      intro e
-      -- c_u = u' would put b at distance ecc - 1 from the leaf u', i.e.
-      -- dist u' b = ecc - 1, but dist u' b ≤ 1 < ecc - 1 (r ≥ 2)
-      rw [e] at hlt2 ⊢
-      omega
-    exact dist_leaf_ge hconn hu' hu'b hcne
+  have hcne : c_u ≠ u' := by
+    intro e
+    rw [e] at hdcb ⊢
+    have hb1 : G.dist b u' ≤ 1 := dist_le_one_of_adj hub'
+    have h0 : G.dist u' u' = 0 := dist_self' hconn u'
+    have htr := hconn.dist_triangle (u := u') (v := b) (w := u')
+    omega
+  have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
+    dist_leaf_ge hconn hu' hu'b hcne
   -- final counting: dist c_u b + 1 = ecc, yet dist c_u u' < ecc (UEP) —
   -- contradiction
   have hlt := huepu.2 u' hne'
