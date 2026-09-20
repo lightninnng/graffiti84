@@ -845,28 +845,33 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         SimpleGraph.Walk.mem_support_iff_exists_append.mp hum
       have hqne : ¬q.Nil := fun hnil => hX hnil.eq
       have hrne : ¬r.Nil := fun hnil => hY hnil.eq.symm
-      -- r = cons hedge rt; the leaf forces the first edge to be u-b
-      obtain ⟨hedge, rt⟩ := r
+      -- r = cons hedge rt (match-pattern); the leaf forces hedge = u-b
+      obtain ⟨t2, hedge, rt, hrcons⟩ :=
+        SimpleGraph.Walk.exists_eq_cons_of_ne (G := G)
+        (u := u) (v := Y) (fun e => hY e) r
       have hbu : G.Adj u b := SimpleGraph.Adj.symm hub
-      have hedgeq : hedge = hbu := by
-        have h1 : G.Adj u hedge.to_start := hedge
+      -- the first edge of r is u - rt's start; both are u-neighbours, so
+      -- the leaf property forces rt's start = b
+      have hrb : rt.start = b := by
         by_cases hrt : rt.Nil
-        · -- rt nil: r = u -> hedge.to_start = Y, and Y ≠ u
-          have hy : hedge.to_start = Y := by
+        · -- rt nil: r is the single edge u -> Y, so Y is u's neighbour;
+          -- the leaf property forces Y = b and rt.start = Y = b
+          have hy' : Y = rt.start := by
             cases rt with
             | nil => rfl
-            | cons h2 t2 => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
-          have hne : hedge.to_start ≠ u := by
-            intro e
-            rw [e] at hy
-            exact hY hy.symm
-          rw [adj_eq_of_degree_eq_one hu h1 (SimpleGraph.Adj.symm hub)]
-          exact hne
-        · -- rt non-nil: rt.start is a neighbour of u, hence = b
-          have h2adj : G.Adj u rt.start := by
+            | cons h2 t2' => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
+          have h2adj : G.Adj u Y := by
+            rw [hy']
+            cases rt with
+            | nil => exact hedge
+            | cons h2 t2' => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
+          have hyb : Y = b :=
+            adj_eq_of_degree_eq_one hu h2adj (SimpleGraph.Adj.symm hub)
+          rw [hy', hyb]
+        · have h2adj : G.Adj u rt.start := by
             cases rt with
             | nil => exact absurd (SimpleGraph.Walk.not_nil_cons) hrt
-            | cons h2 t2 => exact hedge
+            | cons h2 t2' => exact hedge
           rw [adj_eq_of_degree_eq_one hu h2adj (SimpleGraph.Adj.symm hub)]
           rfl
       -- splice: q.dropLast (X -> b) ++ rt (b -> Y); both pieces avoid u
