@@ -775,7 +775,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       intro c p
       induction p with
       | nil => intro ha; exact ha
-      | @cons x y z' h t ih =>
+      | @cons x y c' h t ih =>
           intro ha
           exact ih (hstep x ha y (SimpleGraph.Adj.symm h))
     exact hgo b w hvS)
