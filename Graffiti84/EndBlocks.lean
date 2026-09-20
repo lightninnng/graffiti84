@@ -925,18 +925,21 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     -- with b = u', the leaf u' is adjacent to u (hub with e) and to b=u'
     have hu'u : G.Adj u' u := by
       rw [← e]
-      exact hub
-    have hu'bb : G.Adj u' u' := by
-      rw [← e]
-      exact hu'b
-    exact hne' (adj_eq_of_degree_eq_one hu' hu'u hu'bb)
+      exact SimpleGraph.Adj.symm hub
+    exact absurd (e ▸ hu'b) (by intro hc; exact SimpleGraph.Adj.ne hc rfl)
   have hb'u2 : u' ≠ b := Ne.symm hb'u
   have hcne : c_u ≠ u' := by
     intro e
-    rw [e] at hdcb ⊢
-    have hb1 : G.dist b u' ≤ 1 := dist_le_one_of_adj hub'
-    have h0 : G.dist u' u' = 0 := dist_self' hconn u'
-    have htr := hconn.dist_triangle (u := u') (v := b) (w := u')
+    -- c_u = u' would force d(u', b) = ecc - 1 ≥ 1 (via hdcb) while
+    -- d(u', b) ≤ 1 through the leaf edge; more precisely hdcb becomes
+    -- d(u', b) + 1 = ecc and hlt2 says ecc ≥ 2, so d(u', b) ≥ 1; but as a
+    -- leaf, u' has degree 1 with neighbour b, giving d(u', b) = 1 — no
+    -- contradiction yet. The true contradiction: hdu' (proved below) needs
+    -- c_u ≠ u'. Instead: c_u is a CENTRE; d(c_u, u') = ecc means u' is
+    -- eccentric of c_u; but d(c_u,u')=0 — so ecc=0, contradicting hlt2.
+    have hz : G.dist u' u' = 0 := dist_self' hconn u'
+    rw [e] at hdcu
+    rw [e, hz] at hdcu
     omega
   have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
     dist_leaf_ge hconn hu' hu'b hcne
