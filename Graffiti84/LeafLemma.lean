@@ -84,8 +84,8 @@ theorem isInducedTree_insert_leaf {α : Type*} [Fintype α] [DecidableEq α]
       simp only [SimpleGraph.Adj.toWalk, SimpleGraph.Walk.support_cons,
         SimpleGraph.Walk.support_nil, List.mem_cons, List.mem_singleton] at hz
       rcases hz with hz | hz
-      · exact hz ▸ Finset.mem_insert_self u S
-      · exact hz ▸ Finset.mem_insert_of_mem ha
+      · rw [hz]; exact Finset.mem_insert_self u S
+      · rw [hz]; exact Finset.mem_insert_of_mem ha
     · obtain ⟨p, hp⟩ := hS.1 z hzS a ha
       exact ⟨p, fun w hw => Finset.mem_insert_of_mem (hp w hw)⟩
   constructor

@@ -30,10 +30,10 @@ theorem isCentral_all_of_uep_except {G : SimpleGraph α} (a : α)
     by_cases hv : v = a
     · have hw : w = a := by
         by_contra hw
-        exact hfne w hw (he.symm.trans (hv ▸ hfa))
+        exact hfne w hw (he.symm.trans ((congrArg f hv).trans hfa))
       exact hv.trans hw.symm
     · by_cases hw : w = a
-      · exact (hfne v hv (he.trans (hw ▸ hfa))).elim
+      · exact (hfne v hv (he.trans ((congrArg f hw).trans hfa))).elim
       · have hw' : IsUniqueEccentricPoint G (f v) w := he.symm ▸ hfu w hw
         exact isUniqueEccentricPoint_unique (hfu v hv) hw'
   have hsurj := Finite.surjective_of_injective hinj
@@ -42,7 +42,7 @@ theorem isCentral_all_of_uep_except {G : SimpleGraph α} (a : α)
     obtain ⟨v, hv⟩ := hsurj y
     have hva : v ≠ a := by
       intro h
-      exact hy (hv.symm.trans (h ▸ hfa))
+      exact hy (hv.symm.trans ((congrArg f h).trans hfa))
     exact hv ▸ hfc v hva
   apply hb
   change G.eccent b = G.radius
@@ -56,19 +56,20 @@ theorem isCentral_all_of_uep_except {G : SimpleGraph α} (a : α)
       _ ≤ G.eccent y := G.edist_le_eccent
       _ = G.radius := hother y hy
 
+set_option maxHeartbeats 800000 in
 /-- The exceptional vertex also has a central UEP witness. -/
 theorem central_uep_of_uep_except {G : SimpleGraph α} [Nontrivial α]
     (hconn : G.Connected) (a : α)
     (huep : ∀ v, v ≠ a → ∃ c, IsCentral G c ∧ IsUniqueEccentricPoint G c v) :
     ∃ c, IsCentral G c ∧ IsUniqueEccentricPoint G c a := by
-  have hcentral := isCentral_all_of_uep_except a huep
+  have hcentral : ∀ v, G.eccent v = G.radius := isCentral_all_of_uep_except a huep
   have hr : 0 < G.radius.toNat := by
     have hp := eccNat_pos_of_connected_nontrivial hconn a
     simpa only [eccNat, hcentral a] using hp
   let D : SimpleGraph α := {
     Adj := fun x y => G.dist x y = G.radius.toNat
-    symm := by intro x y h; simpa only [SimpleGraph.dist_comm] using h
-    loopless := by intro x h; simp only [SimpleGraph.dist_self] at h; omega }
+    symm := ⟨by intro x y h; simpa only [SimpleGraph.dist_comm] using h⟩
+    loopless := ⟨by intro x h; simp only [SimpleGraph.dist_self] at h; omega⟩ }
   have hpos : ∀ v, 1 ≤ D.degree v := by
     intro v
     obtain ⟨w, hw⟩ := G.exists_edist_eq_eccent_of_finite v
