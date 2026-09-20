@@ -26,8 +26,10 @@ for job in jobs.get("jobs", []):
         print(f"  step {step['number']:>2} {step['name']}: {step['conclusion']}")
     log_url = f"https://api.github.com/repos/lightninnng/graffiti84/actions/jobs/{job['id']}/logs"
     log = subprocess.run(["curl", "-sL", *hdr, log_url], capture_output=True, text=True, encoding="utf-8").stdout
-    hits = [l for l in log.splitlines()
-            if re.search(r"##\[error\]|error:|Error:|failed|Failed", l)]
+    lines = log.splitlines()
+    hits = [i for i, line in enumerate(lines)
+            if re.search(r"##\[error\]|error:|Error:|failed|Failed", line)]
     print("  --- error lines ---")
-    for h in hits[:25]:
-        print("  " + h[:300])
+    for i in hits[:25]:
+        for line in lines[i:i + (14 if "error: Graffiti84/" in lines[i] else 1)]:
+            print("  " + line[:400])
