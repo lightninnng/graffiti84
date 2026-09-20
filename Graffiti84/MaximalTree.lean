@@ -163,4 +163,76 @@ theorem exists_maximum_tree_two_noncut {G : SimpleGraph α} [Nontrivial α]
   · exact noncut_of_maximum_induced_tree hconn hS hmax x y hxy hx
   · exact noncut_of_maximum_induced_tree hconn hS hmax y x hxy.symm hy
 
+/-- Any finite collection of original leaves attached to an induced tree
+can be added simultaneously. -/
+theorem isInducedTree_union_leaves {G : SimpleGraph α} {S K : Finset α}
+    (hS : IsInducedTree G S)
+    (hK : ∀ u ∈ K, G.degree u = 1 ∧ ∃ a ∈ S, G.Adj u a) :
+    IsInducedTree G (S ∪ K) := by
+  induction K using Finset.induction_on with
+  | empty => simpa using hS
+  | @insert u K hu ih =>
+    obtain ⟨hu1, a, ha, hua⟩ := hK u (Finset.mem_insert_self _ _)
+    have hTK := ih (fun v hv => hK v (Finset.mem_insert_of_mem hv))
+    have ht := isInducedTree_insert_of_unique_neighbor hTK
+      (Finset.mem_union_left K ha) hua (fun z _ huz =>
+        (adj_eq_of_degree_eq_one (G := G) hu1 hua huz).symm)
+    simpa only [Finset.union_insert] using ht
+
+/-- A tree with an available outside leaf at each vertex can be doubled. -/
+theorem treeNumber_double_of_leaf_neighbors {G : SimpleGraph α} {S : Finset α}
+    (hS : IsInducedTree G S)
+    (hcover : ∀ a ∈ S, ∃ u, G.degree u = 1 ∧ G.Adj u a ∧ u ∉ S) :
+    2 * S.card ≤ treeNumber G := by
+  let f : {a // a ∈ S} → α := fun a => (hcover a.val a.property).choose
+  have hf : ∀ a : {a // a ∈ S}, G.degree (f a) = 1 ∧ G.Adj (f a) a.val ∧ f a ∉ S :=
+    fun a => (hcover a.val a.property).choose_spec
+  have hinj : Function.Injective f := by
+    intro a b he
+    apply Subtype.ext
+    have hb : G.Adj (f a) b.val := he.symm ▸ (hf b).2.1
+    exact adj_eq_of_degree_eq_one (G := G) (hf a).1 (hf a).2.1 hb
+  let K := Finset.univ.image f
+  have hK : ∀ u ∈ K, G.degree u = 1 ∧ ∃ a ∈ S, G.Adj u a := by
+    intro u hu
+    obtain ⟨a, _, rfl⟩ := Finset.mem_image.mp hu
+    exact ⟨(hf a).1, a.val, a.property, (hf a).2.1⟩
+  have hdisj : Disjoint S K := by
+    apply Finset.disjoint_left.mpr
+    intro u huS huK
+    obtain ⟨a, _, he⟩ := Finset.mem_image.mp huK
+    exact (hf a).2.2 (he.symm ▸ huS)
+  have hcard : K.card = S.card := by
+    rw [Finset.card_image_of_injective _ hinj, Finset.card_univ]
+    exact Fintype.card_coe S
+  have ht := isInducedTree_union_leaves hS hK
+  have hb : (S ∪ K).card ≤ treeNumber G :=
+    Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩)
+  rw [Finset.card_union_of_disjoint hdisj, hcard] at hb
+  omega
+
+/-- Adding two different outside leaves increases the tree order by two. -/
+theorem treeNumber_add_two_leaves {G : SimpleGraph α} {S : Finset α}
+    (hS : IsInducedTree G S) {u v a b : α} (hu : G.degree u = 1)
+    (hv : G.degree v = 1) (hua : G.Adj u a) (hvb : G.Adj v b)
+    (ha : a ∈ S) (hb : b ∈ S) (huS : u ∉ S) (hvS : v ∉ S) (huv : u ≠ v) :
+    S.card + 2 ≤ treeNumber G := by
+  have hK : ∀ z ∈ ({u, v} : Finset α), G.degree z = 1 ∧ ∃ a ∈ S, G.Adj z a := by
+    intro z hz
+    rcases Finset.mem_insert.mp hz with he | he
+    · subst z; exact ⟨hu, a, ha, hua⟩
+    · have he' := Finset.mem_singleton.mp he
+      subst z; exact ⟨hv, b, hb, hvb⟩
+  have ht := isInducedTree_union_leaves hS hK
+  have hdisj : Disjoint S ({u, v} : Finset α) := by
+    apply Finset.disjoint_left.mpr
+    intro z hzS hz
+    rcases Finset.mem_insert.mp hz with he | he
+    · exact huS (he ▸ hzS)
+    · exact hvS (Finset.mem_singleton.mp he ▸ hzS)
+  have hcard : ({u, v} : Finset α).card = 2 := by simp [huv]
+  have hbound : (S ∪ {u, v}).card ≤ treeNumber G :=
+    Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩)
+  simpa only [Finset.card_union_of_disjoint hdisj, hcard] using hbound
+
 end Graffiti84
