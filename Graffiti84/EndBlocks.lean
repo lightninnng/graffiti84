@@ -620,8 +620,8 @@ theorem deleteConnected_of_isUniqueEccentricPoint_neighbor {G : SimpleGraph α}
 
 /-- In a closed vertex set, every walk starting inside ends inside. -/
 private theorem walk_end_mem_of_closed {G : SimpleGraph α} {S : Finset α}
-    (hS : ∀ u z, u ∈ S → G.Adj u z → z ∈ S) {a : α} :
-    ∀ (p : G.Walk a b), a ∈ S → b ∈ S := by
+    (hS : ∀ u z, u ∈ S → G.Adj u z → z ∈ S) {a b : α} :
+    G.Walk a b → a ∈ S → b ∈ S := by
   intro p
   induction p with
   | nil => intro ha; exact ha
@@ -739,10 +739,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have hvS : v ∈ S := (hSiff v).mpr
     ⟨hWmem v |>.mpr hv, ⟨SimpleGraph.Walk.nil, by
       intro t ht
-      rw [SimpleGraph.Walk.support_nil] at ht
-      exact ht rfl⟩⟩
+      exact List.mem_cons.mp ht |>.symm ▸ rfl⟩⟩
   have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
-    hstep u hu z huz
+    hstep u hu z (SimpleGraph.Adj.symm huz)
   -- the cut vertex a is neither in W nor in S
   obtain ⟨a, ha⟩ := hac
   have haW : a ∉ W := fun hm => ha ((hWmem a).mp hm)
