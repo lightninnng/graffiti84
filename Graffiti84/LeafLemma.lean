@@ -1,4 +1,5 @@
 import Graffiti84.RadiusCriticalStructure
+import Graffiti84.CaseB
 import Mathlib
 
 /-!
@@ -55,6 +56,71 @@ theorem smaller_radius_bound_mono
     (hrr : r ≤ r')
     (ht : 2 * r' ≤ t) :
     2 * r ≤ t := by
+  omega
+
+/-- A cycle cannot contain a degree-one vertex. -/
+lemma leaf_not_mem_cycle {α : Type*} [Fintype α] [DecidableEq α]
+    {G : SimpleGraph α} {u x : α} (hu : G.degree u = 1)
+    {p : G.Walk x x} (hp : p.IsCycle) : u ∉ p.support := by
+  intro hmem
+  have hc := hp.rotate hmem
+  exact hc.snd_ne_penultimate
+    (adj_eq_of_degree_eq_one hu
+      ((p.rotate u hmem).adj_snd hc.not_nil)
+      ((p.rotate u hmem).adj_penultimate hc.not_nil).symm)
+
+/-- Adding a leaf adjacent to a vertex of an induced tree preserves the tree. -/
+theorem isInducedTree_insert_leaf {α : Type*} [Fintype α] [DecidableEq α]
+    {G : SimpleGraph α} {S : Finset α} {u a : α}
+    (hS : IsInducedTree G S) (ha : a ∈ S)
+    (hu : G.degree u = 1) (hua : G.Adj u a) :
+    IsInducedTree G (insert u S) := by
+  have to_a : ∀ z ∈ insert u S, ConnectsWithin G (insert u S) z a := by
+    intro z hz
+    rcases Finset.mem_insert.mp hz with hzu | hzS
+    · subst z
+      refine ⟨hua.toWalk, ?_⟩
+      intro z hz
+      simp only [SimpleGraph.Adj.toWalk, SimpleGraph.Walk.support_cons,
+        SimpleGraph.Walk.support_nil, List.mem_cons, List.mem_singleton] at hz
+      rcases hz with hz | hz
+      · exact hz ▸ Finset.mem_insert_self u S
+      · exact hz ▸ Finset.mem_insert_of_mem ha
+    · obtain ⟨p, hp⟩ := hS.1 z hzS a ha
+      exact ⟨p, fun w hw => Finset.mem_insert_of_mem (hp w hw)⟩
+  constructor
+  · intro x hx y hy
+    obtain ⟨p, hp⟩ := to_a x hx
+    obtain ⟨q, hq⟩ := to_a y hy
+    refine ⟨p.append q.reverse, ?_⟩
+    intro z hz
+    rw [SimpleGraph.Walk.mem_support_append_iff, SimpleGraph.Walk.support_reverse,
+      List.mem_reverse] at hz
+    exact hz.elim (hp z) (hq z)
+  · intro x p hp
+    right
+    intro hcycle
+    have havoid := leaf_not_mem_cycle hu hcycle
+    have hinside : ∀ z ∈ p.support, z ∈ S := by
+      intro z hz
+      rcases Finset.mem_insert.mp (hp z hz) with hzu | hzS
+      · exact (havoid (hzu ▸ hz)).elim
+      · exact hzS
+    rcases hS.2 x p hinside with hzero | hnot
+    · have := hcycle.three_le_length
+      omega
+    · exact hnot hcycle
+
+/-- The graph-level counting step at the end of Case B. -/
+theorem treeNumber_ge_of_rooted_tree_and_leaf {α : Type*} [Fintype α]
+    [DecidableEq α] {G : SimpleGraph α} {S : Finset α} {u a : α} {r : ℕ}
+    (hS : IsInducedTree G S) (ha : a ∈ S) (huS : u ∉ S)
+    (hu : G.degree u = 1) (hua : G.Adj u a) (hcard : 2 * r - 1 ≤ S.card) :
+    2 * r ≤ treeNumber G := by
+  have ht := isInducedTree_insert_leaf hS ha hu hua
+  have hbound : (insert u S).card ≤ treeNumber G :=
+    Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩)
+  rw [Finset.card_insert_of_notMem huS] at hbound
   omega
 
 /-!
