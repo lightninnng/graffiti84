@@ -18,8 +18,10 @@ lemma edist_le_induce_edist (G : SimpleGraph α) (S : Finset α)
     (x y : {v // v ∈ S}) :
     G.edist x.val y.val ≤ (G.induce (S : Set α)).edist x y := by
   refine le_iInf fun p => ?_
-  simpa only [SimpleGraph.Walk.length_map] using SimpleGraph.edist_le
+  have hle := SimpleGraph.edist_le
     (p.map (SimpleGraph.Embedding.induce (S : Set α)).toHom)
+  rw [SimpleGraph.Walk.length_map] at hle
+  exact hle
 
 lemma eccOn_le_induce_eccent (G : SimpleGraph α) (S : Finset α)
     (c : {v // v ∈ S}) :
