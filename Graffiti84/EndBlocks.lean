@@ -810,10 +810,12 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have hpne : ¬p.Nil := by
     intro hnil
     have hcu : c = u := hnil.eq
-    rw [hcu] at *
-    have hb : G.dist b u = 0 := by
-      rw [SimpleGraph.dist_comm u b]
-      exact dist_self' hconn b
+    have h1 : G.dist c b + 1 ≤ G.dist c u := by
+      rw [hcu]
+      have h2 : G.dist u b ≤ 1 := dist_le_one_of_adj hub
+      have h3 : G.dist u u = 0 := dist_self' hconn u
+      omega
+    have h0 : G.dist c u = 0 := by rw [hcu]; exact dist_self' hconn u
     omega
   have hsu : G.dist c u = p.length := hp.symm
   have hdrop : G.dist c p.penultimate ≤ p.length - 1 := by
@@ -834,7 +836,6 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   by_contra hne
   have hne' : u ≠ u' := hne
   -- deleting a leaf never disconnects the remaining vertices
-  have hncu : DeleteConnected G u := by
   have hncu : DeleteConnected G u := by
     intro X Y hX hY
     obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist X Y
