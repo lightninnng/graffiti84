@@ -816,8 +816,8 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.Walk.length_dropLast p
   have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
     SimpleGraph.dist_le (p.dropLast)
-  rw [hpen]
-  have hfin : G.dist c b + 1 ≤ p.length := by omega
+  have hbeq : G.dist c b = G.dist c p.penultimate := by
+    rw [hpen]
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -853,7 +853,57 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hqpen : q.penultimate = b :=
         penultimate_eq_of_leaf_end hu hub q hqne
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      refine ⟨((q.dropLast).copy rfl hpend).append rt, fun z hz => ?_⟩
+      refine ⟨((q.dropLast).copy rfl hpend).append rt, ?_⟩
+      intro hmem
+      rw [SimpleGraph.Walk.support_append, List.mem_append,
+        SimpleGraph.Walk.support_copy] at hmem
+      simp only [List.mem_append] at hmem
+      rcases hmem with h1 | h2
+      · -- z ∈ copy's support = dropLast's support
+        rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_dropLast q hqne] at h1
+        have hzu : u ∈ q.support.dropLast := h1
+        -- u is q's terminal vertex; the geodesic path property forbids it
+        have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
+        have hwn : w.support.Nodup := hpath.support_nodup
+        have hqnd : q.support.Nodup := by
+          have hsub' : q.support <+: w.support := by
+            rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
+            exact List.sublist_append_left _ _
+          exact List.Nodup.sublist hsub' hwn
+        have huin : u ∈ q.support := by
+          rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
+          exact List.mem_of_mem_dropLast h1
+        have hidx1 : q.support.idxOf u = q.support.length - 1 := by
+          have hmemL : u ∈ q.support := huin
+          have hlt := List.idxOf_lt_length_of_mem hmemL
+          have hv := List.getElem_idxOf hmemL
+          have hj : q.support[q.support.length - 1] = u := by
+            cases q with
+            | nil => exact absurd (by simp) hqne
+            | cons h' t' =>
+                rw [← SimpleGraph.Walk.support_cons] at *
+                simp
+          have hqnd' := hqnd
+          have hkey := (hqnd'.getElem_inj_iff).mp (hj.symm.trans hv)
+          rw [hkey] at hlt
+          omega
+        rw [List.mem_dropLast_iff_idxOf_lt huin] at h1
+        omega
+      · -- z ∈ copy's support tail-part = rt.support; u only heads r
+        have hts : rt.support = (SimpleGraph.Walk.cons hedge rt).support.tail := by
+          simp [SimpleGraph.Walk.support_cons]
+        have hsub : z ∈ (SimpleGraph.Walk.cons hedge rt).support := by
+          rw [hts] at h2
+          exact List.mem_of_mem_tail h2
+        have hzw : z ∈ w.support := by
+          rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
+          exact Or.inr hsub
+        refine ⟨hzw, ?_⟩
+        intro hzu
+        rw [hzu] at h2
+        rw [hts] at h2
+        simp [List.mem_cons] at h2
+        exact h2 hzu
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
       rcases hz with h1 | h2
       · -- z ∈ q.dropLast.support ⊆ q.support, and z ≠ u
@@ -933,7 +983,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   -- d(c_u, b) = r - 1 and d(c_u, u) = r
   have hdcu : G.dist c_u u = (G.eccent c_u).toNat := huepu.1
   have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
-    have hrle : G.radius ≤ G.eccent c_u := G.radius_le_eccent
+    have hrle : G.radius ≤ G.eccent c_u :=
+      G.radius_le_eccent (u := c_u)
     have hne : G.radius ≠ ⊤ := by
       obtain ⟨x, y, hxy⟩ := G.exists_edist_eq_radius_of_finite
       rw [← hxy]
