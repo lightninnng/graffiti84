@@ -18,12 +18,16 @@
 \newcommand{\rad}{\operatorname{rad}}
 \newcommand{\ecc}{\operatorname{ecc}}
 \newcommand{\dist}{\operatorname{dist}}
+\newcommand{\diam}{\operatorname{diam}}
 \newcommand{\mindeg}{\delta}
 \newcommand{\NC}{\mathrm{ncv}}
 
 \title{A Self-Contained Proof of Graffiti.pc Conjecture 84:\\
 $t(G)\ge 2r(G)/\delta(G)$}
-\author{Author}
+\author{Hai Luo\\[0.55em]
+  \normalsize Tsinghua Shenzhen International Graduate School, Tsinghua University\\
+  \normalsize Shenzhen, China\\[0.45em]
+  \normalsize\texttt{h-luo26@mails.tsinghua.edu.cn}}
 \date{September 13, 2026}
 
 \begin{document}
@@ -694,7 +698,7 @@ non-cut vertices, eliminating the former block-tree prerequisite.
 The companion Lean package follows a shorter route for Case A: direct
 induction by peeling leaves, without the full structural classification
 presented in this manuscript. Its final declarations are
-\texttt{Graffiti84.leafLemma} and \texttt{Graffiti84.graphConjecture84}.
+\texttt{Graffiti84.leafLemma} and \texttt{Graffiti84.\allowbreak graphConjecture84}.
 The exact commit's GitHub Actions run checks the declarations and prints
 their axiom dependencies. A guide to the formal proof is kept in
 \texttt{docs/formal-proof-guide.md}; this manuscript retains the historical
