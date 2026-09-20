@@ -107,4 +107,60 @@ lemma deleteConnected_of_neighbors_reach {G : SimpleGraph α} (hconn : G.Connect
     List.mem_reverse]
   exact not_or.mpr ⟨hp, hq⟩
 
+/-- A non-cut vertex of a maximum induced tree is non-cut in the whole graph. -/
+theorem noncut_of_maximum_induced_tree {G : SimpleGraph α} (hconn : G.Connected)
+    {S : Finset α} (hS : IsInducedTree G S) (hmax : S.card = treeNumber G)
+    (x t : {v // v ∈ S}) (hxt : x ≠ t)
+    (hx : DeleteConnected (G.induce (S : Set α)) x) : DeleteConnected G x.val := by
+  let f := (SimpleGraph.Embedding.induce (G := G) (S : Set α)).toHom
+  have inside : ∀ z : {v // v ∈ S}, z ≠ x →
+      ∃ p : G.Walk z.val t.val, x.val ∉ p.support := by
+    intro z hzx
+    obtain ⟨p, hp⟩ := hx z t hzx hxt.symm
+    refine ⟨(p.map f).copy rfl rfl, ?_⟩
+    intro hm
+    rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_map f p] at hm
+    obtain ⟨w, hw, he⟩ := List.mem_map.mp hm
+    exact hp ((Subtype.ext he : w = x) ▸ hw)
+  apply deleteConnected_of_neighbors_reach hconn (t := t.val)
+  intro y hxy
+  by_cases hyS : y ∈ S
+  · exact inside ⟨y, hyS⟩ (fun he => hxy.ne (congrArg Subtype.val he).symm)
+  · by_cases hother : ∃ z ∈ S, z ≠ x.val ∧ G.Adj y z
+    · obtain ⟨z, hzS, hzx, hyz⟩ := hother
+      obtain ⟨p, hp⟩ := inside ⟨z, hzS⟩ (fun he => hzx (congrArg Subtype.val he))
+      refine ⟨SimpleGraph.Walk.cons hyz p, ?_⟩
+      rw [SimpleGraph.Walk.support_cons, List.mem_cons]
+      exact not_or.mpr ⟨hxy.ne, hp⟩
+    · have huniq : ∀ z ∈ S, G.Adj y z → z = x.val := by
+        intro z hz hyz
+        by_contra hne
+        exact hother ⟨z, hz, hne, hyz⟩
+      have ht := isInducedTree_insert_of_unique_neighbor hS x.property hxy.symm huniq
+      have hbound : (insert y S).card ≤ treeNumber G :=
+        Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩)
+      rw [Finset.card_insert_of_notMem hyS, ← hmax] at hbound
+      omega
+
+/-- A maximum induced tree in a nontrivial connected graph contains two
+distinct vertices that are non-cut in the original graph. -/
+theorem exists_maximum_tree_two_noncut {G : SimpleGraph α} [Nontrivial α]
+    (hconn : G.Connected) :
+    ∃ S : Finset α, IsInducedTree G S ∧ S.card = treeNumber G ∧
+      ∃ x ∈ S, ∃ y ∈ S, x ≠ y ∧ DeleteConnected G x ∧ DeleteConnected G y := by
+  obtain ⟨S, hS, hmax⟩ := exists_maximum_induced_tree G
+  obtain ⟨u⟩ := hconn.nonempty
+  obtain ⟨v, hvu⟩ := exists_ne u
+  have hpos := hconn.pos_dist_of_ne hvu.symm
+  have ht := treeNumber_ge_dist_add_one hconn u v
+  have hcard : 2 ≤ S.card := by omega
+  haveI : Nontrivial {v // v ∈ S} := Fintype.one_lt_card_iff_nontrivial.mp (by
+    simpa using (show 1 < S.card by omega))
+  have hH := connected_induce_of_isInducedTree hS (Finset.card_pos.mp (by omega))
+  obtain ⟨x, y, hxy, hx, hy⟩ := exists_two_deleteConnected hH
+  refine ⟨S, hS, hmax, x.val, x.property, y.val, y.property,
+    fun he => hxy (Subtype.ext he), ?_, ?_⟩
+  · exact noncut_of_maximum_induced_tree hconn hS hmax x y hxy hx
+  · exact noncut_of_maximum_induced_tree hconn hS hmax y x hxy.symm hy
+
 end Graffiti84
