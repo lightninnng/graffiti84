@@ -12,35 +12,40 @@ The local workspace is used for editing and reading Mathlib source only.
 Pushes to `main` or `codex/**` run dependency resolution, Mathlib cache fetch
 (with retries), `lake build`, source auditing, and declaration axiom reports.
 
-## Formalization status
+## Final theorem
 
-The full conjecture is **not yet formalized**. A successful build checks the
-implemented declarations, not the existence of the final theorem.
+`Graffiti84.graphConjecture84` proves, for every finite connected nontrivial
+simple graph `G`,
 
-Implemented components include:
+```lean
+2 * G.radius.toNat ≤ treeNumber G * minDegree G
+```
 
-- `BasicFacts`: geodesics, induced-tree size, ambient-distance bookkeeping.
-- `RootedChung`: a rooted induced-tree witness on at least `2r - 1` vertices.
-- `Deletion`: comparison with genuine induced-subgraph radii and both UEP
-  radius-drop directions.
-- `EndBlocks`: non-cut vertices, unique leaf neighbours, and Case B's
-  non-cut closure without block decomposition.
-- `CaseB`: self-centrality, the exceptional UEP witness, and the rooted tree.
-- `LeafLemma`: induced-tree leaf extension and counting.
-- `GraphConjecture84`: the minimum-degree-at-least-two branch.
+Here `treeNumber` is the maximum number of vertices in an induced tree,
+and `minDegree` is the minimum vertex degree. There are no radius-critical
+or structural hypotheses in the final theorem.
 
-Remaining: Case A's peeling/structure induction; induced-subgraph bookkeeping
-for the minimal-counterexample induction; `leafLemma`; and the unconditional
-`graphConjecture84` declaration. The mathematical manuscript is a proof draft,
-not a substitute for those missing Lean declarations.
+The proof uses the geodesic bound when the minimum degree is at least two.
+The degree-one case is `Graffiti84.leafLemma`, proved by induction over the
+vertex count. Case A uses direct leaf peeling; Case B uses a rooted induced
+tree. A complete corona classification is not needed.
+
+The CI audit builds both final declarations and prints their axiom
+dependencies. Check the GitHub Actions result for the exact commit being used.
 
 ## Integrity rule
 
-This project intentionally contains no `sorry`, `admit`, or custom `axiom`.
-Undeveloped major theorems are left as comments/TODO targets, not fake theorem
-declarations.
+No `sorry`, `admit`, or custom `axiom` occurs in the Lean proofs.
+The final theorem's dependencies are inspected with `#print axioms` in
+`scripts/axioms.lean`, alongside the source audit.
 
-## Docs
+## Proof guide
 
-- [docs/conjecture-logic.md](docs/conjecture-logic.md) — 猜想陈述、证明逻辑依赖图、
-  复查发现的简化（ESS 可移除、下降判据拆两半）、隐式步骤清单与形式化路线图（中文）。
+- [最终形式化证明导读（中文）](docs/formal-proof-guide.md)
+- [Case A 的直接剥叶归纳](docs/case-a-induction.md)
+- [最终定理源码](Graffiti84/GraphConjecture84.lean)
+- [叶子引理源码](Graffiti84/LeafLemma.lean)
+
+The older `docs/full-proof.md`, `docs/conjecture-logic.md`, and manuscript
+retain the historical structural-classification route. They are not a
+line-by-line description of the final Lean proof.

@@ -691,11 +691,14 @@ The proof decomposes into Lean modules as follows.
 \end{enumerate}
 The Case B non-cut argument now uses only paths and the existence of two
 non-cut vertices, eliminating the former block-tree prerequisite.
-The companion Lean package is incomplete: the Case A peeling induction,
-the minimal-counterexample assembly, and the final graph theorem are not
-yet kernel-certified. Implemented declarations and their axiom dependencies
-are checked in GitHub Actions. The proof ledger is kept in
-\texttt{docs/full-proof.md}.
+The companion Lean package follows a shorter route for Case A: direct
+induction by peeling leaves, without the full structural classification
+presented in this manuscript. Its final declarations are
+\texttt{Graffiti84.leafLemma} and \texttt{Graffiti84.graphConjecture84}.
+The exact commit's GitHub Actions run checks the declarations and prints
+their axiom dependencies. A guide to the formal proof is kept in
+\texttt{docs/formal-proof-guide.md}; this manuscript retains the historical
+classification route.
 
 \begin{thebibliography}{9}
 

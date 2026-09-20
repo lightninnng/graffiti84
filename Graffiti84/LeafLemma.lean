@@ -7,21 +7,13 @@ import Graffiti84.LeafDeletion
 import Mathlib
 
 /-!
-# LeafLemma
+# Strong leaf lemma
 
-This layer is reserved for the strong leaf lemma
-
-  if `G` is finite, connected, and has a leaf, then
-  `2 * radius(G) <= largestInducedTreeSize(G)`.
-
-There are no `sorry`/`axiom` declarations in this snapshot.
-
-The final theorem is intentionally not declared until the vrd cut-vertex
-structure closure and the minimal-counterexample induction are formalized.
-The radius-drop / UEP criterion and the rooted Chung lemma are implemented.
-
-This file contains the arithmetic inequality required for the corona-count
-branch, the induced-tree leaf extension, and its graph-level size bound.
+A finite connected graph with a leaf has an induced tree on at least twice
+its radius many vertices. The proof uses induction on the vertex count,
+Case A's direct leaf peeling, and Case B's rooted induced-tree construction.
+All deletions below use actual induced graphs; `Deletion` supplies the
+bridges to the ambient-distance `radOn` lemmas.
 -/
 
 namespace Graffiti84
@@ -128,8 +120,8 @@ theorem treeNumber_ge_of_rooted_tree_and_leaf {α : Type*} [Fintype α]
   rw [Finset.card_insert_of_notMem huS] at hbound
   omega
 
-/-- Case B assembled in the original graph. The hypotheses on the deleted
-graph are explicit; the minimal-counterexample argument still has to supply them. -/
+/-- Case B assembled in the original graph, with explicit hypotheses on the
+deleted graph supplied by the vertex-count induction in `leafLemma`. -/
 theorem leaf_bound_of_caseB {α : Type*} [Fintype α] [DecidableEq α]
     {G : SimpleGraph α} (hconn : G.Connected) {u a : α}
     (hu : G.degree u = 1) (hua : G.Adj u a) (hr2 : 2 ≤ G.radius.toNat)
@@ -183,9 +175,9 @@ lemma enat_add_one_le_of_toNat_lt {a b : ℕ∞} (ha : a ≠ ⊤) (hb : b ≠ �
     exact_mod_cast (show a.toNat + 1 ≤ b.toNat by omega)
   simpa only [ENat.coe_toNat ha, ENat.coe_toNat hb] using hh
 
-/-- Every finite connected graph with a leaf has an induced tree of order at least twice its radius. -/
 set_option backward.isDefEq.respectTransparency false in
- theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
+/-- Every finite connected graph with a leaf has an induced tree of order at least twice its radius. -/
+theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
     (G : SimpleGraph α) (hG : G.Connected) (hleaf : ∃ u, G.degree u = 1) :
     2 * G.radius.toNat ≤ treeNumber G := by
   classical

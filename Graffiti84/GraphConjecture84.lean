@@ -2,15 +2,11 @@ import Graffiti84.LeafLemma
 import Mathlib
 
 /-!
-# GraphConjecture84
+# Graffiti.pc Conjecture 84
 
-Final arithmetic assembly for Graffiti.pc Conjecture 84.
-
-This file contains no `sorry` and no `axiom`.
-
-The unconditional graph-facing theorem awaits the Leaf Lemma. The
-minimum-degree-at-least-two branch below already uses the elementary
-geodesic bound, with no Erdos--Saks--Sos hypothesis.
+The leaf lemma proves the minimum-degree-one case. The elementary geodesic
+bound proves the minimum-degree-at-least-two case. The final declaration
+`graphConjecture84` has no structural or radius-critical hypotheses.
 -/
 
 namespace Graffiti84
@@ -45,23 +41,7 @@ theorem final_arithmetic
       _ ≤ δ * t := Nat.mul_le_mul h2 ht
       _ = t * δ := Nat.mul_comm _ _
 
-/-!
-## Final graph theorem target
 
-After `leafLemma` is implemented:
-
-```
-theorem graphConjecture84
-    {α : Type*} [Fintype α] [DecidableEq α] [Nontrivial α]
-    (G : SimpleGraph α) [DecidableRel G.Adj]
-    (hG : G.Connected) :
-    2 * G.radius.toNat ≤
-      treeNumber G * minDegree G := by
-  ...
-```
-
-The project uses the `minDegree` definition below.
--/
 
 
 /-- The minimum degree of `G`. -/
