@@ -820,7 +820,8 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
   have h := SimpleGraph.dist_le (p.dropLast)
   rw [hlen] at h
   have h3 : p.length - 1 + 1 = p.length :=
-    Nat.sub_one_add_one (SimpleGraph.Walk.not_nil_iff_lt_length.mp hpne)
+    Nat.sub_one_add_one_eq_of_pos
+      (SimpleGraph.Walk.not_nil_iff_lt_length.mp hpne)
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -870,28 +871,19 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
           rw [hqr, hrcons, SimpleGraph.Walk.support_append,
             SimpleGraph.Walk.support_cons]
           simp
-        have hqnd : q.support.Nodup := by
-          rw [hsplit]
-          exact hwn.of_append_left
+        have hqnd : q.support.Nodup :=
+          hsplit ▸ hwn |>.of_append_left
         have huin : u ∈ q.support :=
           List.mem_of_mem_dropLast h1
         have hidx1 : q.support.idxOf u = q.support.length - 1 := by
-          have hmemL : u ∈ q.support := huin
-          have hlt := List.idxOf_lt_length_of_mem hmemL
-          have hv : q.support[q.support.idxOf u] = u :=
-            List.getElem_idxOf hlt
-          have hj : q.support[q.support.length - 1] = u := by
-            cases q with
-            | nil => exact absurd (by simp) hqne
-            | cons h' t' =>
-                show q.support.getLastD u = u
-                rw [show q.support = h'.to_target :: t'.support from by
-                  rw [SimpleGraph.Walk.support_cons]]
-                simp
-                exact (t'.support.dropLast).symm
-          have hqnd' := hqnd
-          have hkey := (hqnd'.getElem_inj_iff).mp (hj.symm.trans hv)
-          rw [hkey] at hlt
+          -- u is the LAST element of q.support (q is a walk ending at u);
+          -- by Nodup, u occurs only there, so its index is length - 1
+          have hmem2 : u ∈ q.support := huin
+          have hnotin : u ∉ q.support.dropLast := h1
+          have := List.mem_dropLast_iff_idxOf_lt hmem2
+          have hlt : q.support.idxOf u < q.support.length :=
+            List.idxOf_lt_length_of_mem hmem2
+          by_contra hc
           omega
         rw [List.mem_dropLast_iff_idxOf_lt huin] at h1
         omega
