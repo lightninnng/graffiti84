@@ -1,10 +1,23 @@
 \documentclass[11pt]{article}
-
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsthm,mathtools}
-\usepackage{enumitem}
-\usepackage[hidelinks]{hyperref}
+\usepackage[a4paper,margin=28mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amsthm,mathtools}
+\usepackage{newtxtext,newtxmath}
+\usepackage{booktabs,array}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
 \usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\hypersetup{colorlinks=true,linkcolor=blue!55!black,citecolor=blue!55!black,urlcolor=blue!55!black}
+\setlist{nosep}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0pt}
+\setlength{\textfloatsep}{14pt plus 2pt minus 3pt}
+\setlength{\floatsep}{11pt plus 2pt minus 2pt}
+\emergencystretch=2em
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -13,7 +26,8 @@
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{remark}[theorem]{Remark}
-\newtheorem{fact}[theorem]{Fact}
+\newtheorem{fact}[theorem]{Conjecture}
+\crefname{fact}{Conjecture}{Conjectures}
 
 \newcommand{\rad}{\operatorname{rad}}
 \newcommand{\ecc}{\operatorname{ecc}}
@@ -24,36 +38,50 @@
 
 \title{A Self-Contained Proof of Graffiti.pc Conjecture 84:\\
 $t(G)\ge 2r(G)/\delta(G)$}
-\author{Hai Luo\\[0.55em]
+
+\author{Hai Luo\\[6pt]
   \normalsize Tsinghua Shenzhen International Graduate School, Tsinghua University\\
-  \normalsize Shenzhen, China\\[0.45em]
+  \normalsize Shenzhen, China\\[2pt]
   \normalsize\texttt{h-luo26@mails.tsinghua.edu.cn}}
-\date{September 13, 2026}
+
+\date{September 21, 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-For a finite connected graph $G$, let $t(G)$ denote the largest order of an
-induced subtree, let $r(G)$ denote the radius, and let $\delta(G)$ denote the
-minimum degree.  Graffiti.pc Conjecture 84 (West's catalogue, 2004) asserts
+For a finite connected graph $G$, write $r(G)$ for the radius, $\delta(G)$ for
+the minimum degree, and $t(G)$ for the largest order of an induced subtree.
+Graffiti.pc Conjecture 84 (West's catalogue, 2004) asserts
 \[
         t(G)\ge \frac{2r(G)}{\delta(G)}.
 \]
-We prove the equivalent integral inequality
-$2r(G)\le t(G)\delta(G)$, via the leaf lemma: every finite connected graph
-with a leaf contains an induced tree on at least $2\,r(G)$ vertices.
-The presentation is fully self-contained.  In particular the
-Erd\H{o}s--Saks--S\'os induced-path theorem is not used (a geodesic bound
-suffices for the case $\delta\ge2$), and the radius-drop criterion together
-with the structure theorem for vertex-radius-decreasing graphs
-$G=S_\ell(B)$---classically due to Gliviak and Fajtlowicz---are re-proved
-here from elementary principles.
+Erd\H{o}s, Saks, and S\'os proved that every connected graph of radius $r$
+contains an induced path on at least $2r-1$ vertices, which settles the
+conjecture whenever $\delta(G)\ge2$.  The remaining case is the content of
+this paper: the \emph{leaf lemma}, stating that every finite connected graph
+with a leaf contains an induced tree on at least $2r(G)$ vertices, thereby
+strengthening the induced-path bound to exactly $2r$ precisely when
+$\delta(G)=1$.  We prove the leaf lemma and hence the conjecture.  The
+presentation is self-contained.  In particular the Erd\H{o}s--Saks--S\'os
+theorem is not used (a geodesic bound suffices for the case $\delta\ge2$),
+and the radius-drop criterion together with the structure theorem for
+vertex-radius-decreasing graphs $G=S_\ell(B)$---classically due to Gliviak
+and Fajtlowicz---are re-proved here from elementary principles; a rooted
+form of Chung's induced-path construction is written out in full, including
+two details that are usually left implicit.  An accompanying Lean~4/Mathlib
+development verifies the leaf lemma and the final theorem under a pinned
+toolchain; the formalization is a supplementary verification layer.
 \end{abstract}
 
-\section{The conjecture and overview}
+\medskip
+\noindent\textbf{Keywords.} induced trees; graph radius; Graffiti.pc
+conjectures; cut vertices; radius-critical graphs; Lean 4.
 
-All graphs are finite, simple, and undirected.  For a connected graph $G$ write
+\section{Introduction}\label{sec:intro}
+
+All graphs are finite, simple, and undirected.  For a connected graph $G$
+write
 \[
  \ecc_G(v)=\max_{x\in V(G)} d_G(v,x),\qquad r(G)=\min_{v\in V(G)}\ecc_G(v),
 \]
@@ -83,11 +111,11 @@ $2\,r(G)$ vertices.
 \end{lemma}
 
 Indeed, if $\delta(G)\ge2$ then $t(G)\ge r(G)+1$ by
-Lemma~\ref{lem:geod} below, whence
+\cref{lem:geod} below, whence
 $t(G)\delta(G)\ge 2(r+1)>2r$; if $\delta(G)=1$ the leaf lemma gives
 $t(G)\delta(G)=t(G)\ge 2r$.  This proves
-Conjecture~\ref{fact:84} modulo Lemma~\ref{lem:leaf}, which is proved in
-Section~\ref{sec:leaf}.
+\cref{fact:84} modulo \cref{lem:leaf}, which is proved in
+\cref{sec:leaf}.
 
 The proof of the leaf lemma has two branches, according to whether deleting
 the leaf lowers the radius.  One branch is governed by the following
@@ -96,7 +124,7 @@ classical notion.
 \begin{definition}\label{def:vrd}
 A connected nontrivial graph $G$ is \emph{vertex-radius-decreasing}
 (\emph{vrd}) if $r(G-v)<r(G)$ for every non-cut vertex $v$ of $G$.  By
-Lemma~\ref{lem:drop1} the inequality is automatically an equality:
+\cref{lem:drop1} the inequality is automatically an equality:
 $r(G-v)=r(G)-1$.
 \end{definition}
 
@@ -116,30 +144,27 @@ $\ell+1$ in $G$; moreover
         r(G)=r(B)+\ell .
 \]
 Consequently $t(G)\ge 2\,r(G)$
-(Corollary~\ref{cor:vrd-tree}).
+(\cref{cor:vrd-tree}).
 \end{theorem}
 
 Classically this is due to Gliviak~\cite{Gliviak1976} (see also the survey
 \cite{Gliviak2000}, Theorem~4, and Swart~\cite[Theorem~2.2.10]{Swart1996}),
-with an ingredients credited to Fajtlowicz~\cite{Fajtlowicz1988}.  Here we
-prove Theorem~\ref{thm:vrd} from scratch (Section~\ref{sec:vrd}).
-The non-cut-vertex argument below uses paths directly, without a block tree.
+with ingredients credited to Fajtlowicz~\cite{Fajtlowicz1988}.  Here we
+prove \cref{thm:vrd} from scratch in \cref{sec:vrd}.
+The non-cut-vertex argument uses paths directly, without a block tree.
 The proof of the leaf lemma also uses a \emph{rooted} form of Chung's
-induced-path construction (Lemma~\ref{lem:rooted-chung}), proved in full in
-Section~\ref{sec:chung}, including two details that are usually left implicit.
+induced-path construction (\cref{lem:rooted-chung}), proved in full in
+\cref{sec:chung}, including two details that are usually left implicit.
 
-\subsection*{Dependency account}
-
-\begin{itemize}[itemsep=1pt]
-\item Section~\ref{sec:elem}: elementary facts, all proved.
-\item Section~\ref{sec:chung}: the rooted Chung lemma, self-contained.
-\item Section~\ref{sec:vrd}: Theorem~\ref{thm:vrd} and its corollary,
-      self-contained.
-\item Section~\ref{sec:leaf}: the leaf lemma, from the two preceding items.
-\item Section~\ref{sec:main}: Conjecture~\ref{fact:84}.
-\end{itemize}
+The manuscript is organized as follows.  \cref{sec:elem} collects the
+elementary facts, all proved.  \cref{sec:chung} establishes the rooted Chung
+lemma, self-contained.  \cref{sec:vrd} develops \cref{thm:vrd} and its
+corollary from first principles.  \cref{sec:leaf} proves the leaf lemma from
+the two preceding sections, and \cref{sec:main} assembles \cref{fact:84}.
 No result of~\cite{ESS1986,Fajtlowicz1988,Gliviak1976,Gliviak2000,Swart1996}
 is used in any proof; those works are cited only as historical credits.
+The companion Lean development is summarized in \cref{sec:lean}, with a
+statement-by-statement correspondence in \cref{app:map}.
 
 \section{Elementary facts}\label{sec:elem}
 
@@ -170,7 +195,7 @@ $G-v$, so $d_G(c',v)\le1+\rho$.  Hence $\ecc_G(c')\le\rho+1$.
 
 \begin{lemma}[Leaves]\label{lem:leafbasics}
 Let $z$ be a leaf of $G$ with $|V(G)|\ge3$.
-\begin{enumerate}[label=(\roman*),itemsep=1pt]
+\begin{enumerate}[label=(\roman*)]
 \item Every path with both ends $\ne z$ avoids $z$; hence distances between
       vertices of $G-z$ agree in $G$ and $G-z$.
 \item $r(G-z)\le r(G)$: a centre $c$ of $G$ is not a leaf, and
@@ -197,7 +222,7 @@ Write $r=r(G)$.  For $y\ne v$, a $c$--$y$ path through $v$ has length at
 least $d(c,v)+1\ge r+1>r-1\ge d(c,y)$; so every $c$--$y$ geodesic avoids $v$,
 and $d_{G-v}(c,y)=d_G(c,y)\le r-1$.  Thus every vertex of $G-v$ reaches $c$:
 $G-v$ is connected, and $\ecc_{G-v}(c)\le r-1$.  The reverse inequality is
-Lemma~\ref{lem:drop1}.
+\cref{lem:drop1}.
 \end{proof}
 
 \begin{lemma}[Unique eccentric points, II: the converse]\label{lem:dropuep}
@@ -241,7 +266,7 @@ all have a universal vertex (on three vertices, both $P_3$ and $K_3$ do).
 \end{proof}
 
 \begin{lemma}[Counting; heredity]\label{lem:count}
-\begin{enumerate}[label=(\roman*),itemsep=1pt]
+\begin{enumerate}[label=(\roman*)]
 \item For $s,\ell\ge1$:\ $(s+1)(\ell+1)-2(s+\ell)=(s-1)(\ell-1)\ge0$.
 \item $t(G-v)\le t(G)$.
 \end{enumerate}
@@ -285,7 +310,7 @@ $d_F(v_0,a)\le1+d_F(v_0,w)\le r$.  (This uses that $a$ is non-isolated; the
 inequality $\le r$ is the first of two details that are easy to omit.)
 
 Fix a geodesic $v_0,v_1,\dots,v_r=a$; it is induced
-(Lemma~\ref{lem:geod}) and $d(v_0,v_j)=j$.
+(\cref{lem:geod}) and $d(v_0,v_j)=j$.
 
 Since $\ecc_F(v_2)\ge r$, there is a vertex $w$ with $d_F(v_2,w)\ge r$; then
 $w\ne a$ because $d(v_2,a)=r-2<r$.  Now
@@ -325,14 +350,14 @@ deleted.
 \begin{remark}
 The classical (unrooted) Erd\H{o}s--Saks--S\'os theorem
 \cite{ESS1986,ChungCredit} is \emph{not} used in this paper: the case
-$\delta\ge2$ of the conjecture needs only Lemma~\ref{lem:geod}, and in the
+$\delta\ge2$ of the conjecture needs only \cref{lem:geod}, and in the
 vrd branch the core block is handled with the weaker count of
-Lemma~\ref{lem:count}(i).
+\cref{lem:count}(i).
 \end{remark}
 
 \section{The structure theorem for vrd graphs}\label{sec:vrd}
 
-In this section $G$ is vrd (Definition~\ref{def:vrd}) with a cut vertex and
+In this section $G$ is vrd (\cref{def:vrd}) with a cut vertex and
 $r:=r(G)\ge2$.  Write $\NC(G)$ for the set of non-cut vertices.
 
 \begin{proposition}[Non-cut vertices are leaves]\label{prop:ncvleaf}
@@ -345,29 +370,31 @@ Suppose $v\in\NC(G)$ with $\deg(v)\ge2$.  Let
  S=\{x:\ x\text{ is reachable from }v\text{ by a path whose interior and
  endpoints all lie in }\NC(G)\},
 \]
-the component of $v$ in $G[\NC(G)]$.  ($S$ contains $v$ and is connected by
-construction.)  \emph{$S$ is closed under neighbours.}  Let $w\in S$.
-\begin{itemize}[itemsep=1pt]
-\item If $\deg(w)\ge2$: by Lemmas~\ref{lem:dropuep} and~\ref{lem:uepdrop}
-      (with $w\in\NC$ and $r(G-w)=r-1$) $w$ is the UEP of a central vertex;
-      then every neighbour $x$ of $w$ satisfies $d(c,x)=r-1$, and any
-      $c$--$q$ path through $x$ has length at least $(r-1)+1=r>d(c,q)$, so
-      geodesics from $c$ avoid $x$; $w$ has a second neighbour $y\ne x$,
-      which reaches $c$ avoiding $x$, so $G-x$ is connected:
-      $x\in\NC(G)$.  Being adjacent to $w\in S$, we get $x\in S$.
-\item If $\deg(w)=1$: then $w\ne v$ (as $\deg(v)\ge2$), and the $\NC$-path
-      from $v$ to $w$ has a last edge into $w$; the unique neighbour of $w$
-      is the penultimate vertex of that path, which lies in $S$.
-\end{itemize}
+the component of $v$ in $G[\NC(G)]$ ($S$ contains $v$ and is connected by
+construction).  We claim that $S$ is closed under neighbours.  Let $w\in S$.
+If $\deg(w)\ge2$, then by \cref{lem:dropuep,lem:uepdrop}
+(with $w\in\NC$ and $r(G-w)=r-1$) $w$ is the UEP of a central vertex;
+then every neighbour $x$ of $w$ satisfies $d(c,x)=r-1$, and any
+$c$--$q$ path through $x$ has length at least $(r-1)+1=r>d(c,q)$, so
+geodesics from $c$ avoid $x$; $w$ has a second neighbour $y\ne x$,
+which reaches $c$ avoiding $x$, so $G-x$ is connected:
+$x\in\NC(G)$.  Being adjacent to $w\in S$, we get $x\in S$.
+If $\deg(w)=1$, then $w\ne v$ (as $\deg(v)\ge2$), and the $\NC$-path
+from $v$ to $w$ has a last edge into $w$; the unique neighbour of $w$
+is the penultimate vertex of that path, which lies in $S$.
 So no edge leaves $S$.  But $S$ is nonempty ($v\in S$), proper (it contains
 only non-cut vertices, while $G$ has a cut vertex), connected, and $G$ is
 connected --- a contradiction.
 \end{proof}
 
 \begin{corollary}\label{cor:ncvleaf}
-(i) $G$ has a leaf (indeed $\NC(G)$ consists of leaves, and $|\NC|\ge2$ by
-Lemma~\ref{lem:twoncv}).  (ii) $r\ge2$ (assumed).  \qed
+The graph $G$ has a leaf: $\NC(G)$ consists of leaves, and $|\NC(G)|\ge2$ by
+\cref{lem:twoncv}.
 \end{corollary}
+
+\begin{proof}
+Immediate from \cref{prop:ncvleaf} and \cref{lem:twoncv}.
+\end{proof}
 
 \begin{proposition}[Leaf stripping]\label{prop:strip}
 Let $L$ be the set of leaves of $G$ and $G_1=G-L$.  Then $G_1$ is connected
@@ -378,12 +405,12 @@ $G_1$.
 \begin{proof}
 $G_1$ is connected (deleted vertices are leaves).  Lower bound: a centre $c$
 of $G_1$ satisfies $d_G(c,x)=d_{G_1}(c,x)\le r(G_1)$ for non-leaves $x$
-(paths avoid leaves, Lemma~\ref{lem:leafbasics}(i)) and
+(paths avoid leaves, \cref{lem:leafbasics}(i)) and
 $d_G(c,z)\le1+r(G_1)$ for leaves $z$; hence
 $r(G)\le r(G_1)+1$, i.e.\ $r(G_1)\ge r-1$.  Upper bound: $r(G-u)=r-1$ for a
-leaf $u$ (Definition~\ref{def:vrd} and Lemma~\ref{lem:drop1}), and deleting
+leaf $u$ (\cref{def:vrd} and \cref{lem:drop1}), and deleting
 the remaining leaves one by one never increases the radius
-(Lemma~\ref{lem:leafbasics}(ii)).
+(\cref{lem:leafbasics}(ii)).
 \end{proof}
 
 \begin{proposition}[The penultimate layer]\label{prop:penult}
@@ -393,7 +420,7 @@ $w$ is a cut vertex of $G$ and has at least one leaf neighbour.
 
 \begin{proof}
 $w\notin L$ (leaves of $G$ are isolated in $G_1$, and $|V(G_1)|\ge2$).  If
-$w$ were a non-cut vertex of $G$, Proposition~\ref{prop:ncvleaf} would make
+$w$ were a non-cut vertex of $G$, \cref{prop:ncvleaf} would make
 $w$ a leaf, a contradiction; so $w$ is a cut vertex of $G$.  Now $G-w$ is
 disconnected, while $G_1-w$ is connected; so $G_1-w$ lies inside one
 component of $G-w$, and every other component consists of leaves only.  A
@@ -409,7 +436,7 @@ A vertex of $G$ has at most one leaf neighbour.
 
 \begin{proof}
 Suppose leaves $u,u'$ share the parent $b$.  By
-Lemma~\ref{lem:dropuep} (applied to the non-cut vertex $u$) some central $c$
+\cref{lem:dropuep} (applied to the non-cut vertex $u$) some central $c$
 has UEP $u$, so $d(c,b)=r-1$ and $c\ne b$ (else $r=d(b,u)=1$).  Every
 $c$--$u'$ path ends with $b\,u'$, so $d(c,u')=d(c,b)+1=r$, contradicting the
 uniqueness in $\mathrm{UEP}(c,u)$ (as $u'\ne u$).
@@ -421,17 +448,17 @@ $r(G_1-w)=r(G_1)-1=r-2$.
 \end{proposition}
 
 \begin{proof}
-Fix such $w$.  By Proposition~\ref{prop:penult}, $w$ has a leaf neighbour $u$;
-by Proposition~\ref{prop:oneleaf} it is the unique one.  Let $c$ be central
-in $G$ with $\mathrm{UEP}(c,u)$ (Lemmas~\ref{lem:dropuep} applied to $u\in\NC(G)$):
+Fix such $w$.  By \cref{prop:penult}, $w$ has a leaf neighbour $u$;
+by \cref{prop:oneleaf} it is the unique one.  Let $c$ be central
+in $G$ with $\mathrm{UEP}(c,u)$ (\cref{lem:dropuep} applied to $u\in\NC(G)$):
 $d(c,u)=r$, all others $\le r-1$, so $d(c,w)=r-1$; also $c\notin L$
-(Lemma~\ref{lem:leafbasics}(iii)), so $c\in V(G_1)$ and
+(\cref{lem:leafbasics}(iii)), so $c\in V(G_1)$ and
 $\ecc_{G_1}(c)=r-1=r(G_1)$.
 
 \emph{Claim: $d(c,z)\le r-2$ for all $z\in V(G_1)-w$.}  Suppose
-$d(c,z)=r-1$ (distances agree with $G$ by Lemma~\ref{lem:leafbasics}(i)).
+$d(c,z)=r-1$ (distances agree with $G$ by \cref{lem:leafbasics}(i)).
 Then $z\notin L$ and $z\ne w$, so $z$ is a cut vertex of $G$ (otherwise
-Proposition~\ref{prop:ncvleaf} puts $z$ in $L$).  Let $C_0\ni c$ be the
+\cref{prop:ncvleaf} puts $z$ in $L$).  Let $C_0\ni c$ be the
 component of $G-z$ and let $C$ be another component, nonempty.  For
 $y\in C$, every $c$--$y$ path passes through $z$, so
 $d(c,y)\ge d(c,z)+1=r$; since $\ecc(c)=r$, we get $d(c,y)=r$, hence $y=u$ by
@@ -440,21 +467,21 @@ $w\ne z$, so $w\in C$, i.e.\ $w=u$ --- absurd (as $u$ is a leaf and $w$ has
 degree at least two in $G_1$).  This proves the claim.
 
 Hence $\ecc_{G_1-w}(c)\le r-2$, so $r(G_1-w)\le r-2$; the reverse bound is
-Lemma~\ref{lem:drop1} applied in $G_1$.
+\cref{lem:drop1} applied in $G_1$.
 \end{proof}
 
 \begin{proposition}[Decreasing blocks]\label{prop:block}
 Let $B$ be a connected graph with no cut vertex such that
 $r(B-v)=r(B)-1$ for every $v$ (e.g.\ the terminal graph of the stripping
-chain, by Proposition~\ref{prop:stripsvrd}).  Then $B$ is self-centered and
+chain, by \cref{prop:stripsvrd}).  Then $B$ is self-centered and
 admits a fixed-point-free involution $f:V(B)\to V(B)$ with
 $\mathrm{UEP}(f(v),v)$ for every $v$; in particular each vertex has a unique
 eccentric vertex.
 \end{proposition}
 
 \begin{proof}
-For each $v$, Lemma~\ref{lem:dropuep} gives a central $c_v$ with
-$\mathrm{UEP}(c_v,v)$; by Lemma~\ref{lem:uepunique} the map
+For each $v$, \cref{lem:dropuep} gives a central $c_v$ with
+$\mathrm{UEP}(c_v,v)$; by \cref{lem:uepunique} the map
 $f:v\mapsto c_v$ is injective.  Hence $|V|\le|C(B)|\le|V|$, so
 $C(B)=V(B)$: $B$ is self-centered, and $f$ is a bijection with $f(v)\ne v$
 (as $d(v,f(v))=r(B)\ge1$).  If $f(f(v))\ne v$, then $f(f(v))$ and $v$ are
@@ -465,7 +492,7 @@ $\mathrm{UEP}(v,f(v))$ is the statement
 $\mathrm{UEP}(f(f(v)),f(v))$ read at $v$.
 \end{proof}
 
-\begin{theorem}[Structure, self-contained version of Theorem~\ref{thm:vrd}]
+\begin{theorem}[Structure, self-contained version of \cref{thm:vrd}]
 \label{thm:vrdproof}
 $G=S_k(B)$ for the terminal block $B$ of the stripping chain and
 $k=r-r(B)\ge1$; in particular $r(G)=r(B)+k$.
@@ -474,7 +501,7 @@ $k=r-r(B)\ge1$; in particular $r(G)=r(B)+k$.
 \begin{proof}
 Form the stripping chain $G=G_0\supset G_1\supset\cdots$,
 $G_{i+1}=G_i-L(G_i)$ ($L(\cdot)$ the leaf set).  By
-Propositions~\ref{prop:strip} and~\ref{prop:stripsvrd}, every $G_i$ with a
+\cref{prop:strip,prop:stripsvrd}, every $G_i$ with a
 cut vertex is vrd and $r(G_i)=r-i$; since $|V(G_i)|$ strictly decreases,
 the chain terminates at the first $k$ with $G_k=:B$ having no cut vertex,
 and $r(B)=r-k\ge1$, so $|V(B)|\ge2$.
@@ -485,7 +512,7 @@ $G_{i+1}=S_m(B)$ with $m=k-i-1\ge0$, and let $P$ be the set of parents of
 $L(G_i)$; each leaf of $G_i$ has its parent in $G_{i+1}$ (a leaf whose
 parent were also deleted would force $G_i=K_2$, whose radius $1$ contradicts
 $r(G_i)=r-i\ge r-k+1\ge2$), and each vertex has at most one leaf
-(Proposition~\ref{prop:oneleaf}).  We must show that $P$ is exactly the set
+(\cref{prop:oneleaf}).  We must show that $P$ is exactly the set
 of the $|B|$ \emph{tips} of $G_{i+1}=S_m(B)$ (the vertices at depth $m$,
 one on each pendant path).
 
@@ -496,33 +523,31 @@ $d(z,b')+j\le r(B)+m$ from $z$ (as $d(z,b')\le r(B)$, $B$ being
 self-centered).  So some $p\in P$ has $d(z,p)\ge r(B)+m$; also
 $d(z,p)\le r(B)+\mathrm{depth}(p)\le r(B)+m$.  Hence $d(z,p)=r(B)+m$ and the
 witness is unique: $B$ has a unique eccentric vertex $f(z)$
-(Proposition~\ref{prop:block}), and the distance bound shows
+(\cref{prop:block}), and the distance bound shows
 $p$ lies on $f(z)$'s branch at depth $m$, i.e.\ $p$ is $f(z)$'s tip.  As
 $f$ is surjective, every tip is in $P$.
 
 \emph{(b) No other vertex is in $P$.}  Suppose $p\in P$ has depth $j<m$ on
 the branch over $b\in B$, with leaf $u$ adjacent to $p$.  The vertex $u$ is
-a non-cut vertex of $G_i$, so by Lemma~\ref{lem:dropuep} some centre $c$ of
+a non-cut vertex of $G_i$, so by \cref{lem:dropuep} some centre $c$ of
 $G_i$ has $\mathrm{UEP}(c,u)$: $d(c,u)=r(B)+m+1$, hence $d(c,p)=r(B)+m$.
-Now $c$ is not a leaf of $G_i$ (Lemma~\ref{lem:leafbasics}(iii)).  Locate $c$:
-\begin{itemize}[itemsep=1pt]
-\item $c\in B$: then $d(c,p)\le r(B)+j\le r(B)+m-1$, too small.
-\item $c$ on $p$'s own branch at depth $j'$: then
-      $d(c,p)=|j'-j|\le m$, too small.
-\item $c$ on the branch over $b''\ne b$ at depth $j''$: let $w$ be the tip
-      of $p$'s branch (depth $m$; it exists and lies in $G_{i+1}$).  Then
+Now $c$ is not a leaf of $G_i$ (\cref{lem:leafbasics}(iii)).  If
+$c\in B$, then $d(c,p)\le r(B)+j\le r(B)+m-1$, too small.  If $c$ lies on
+$p$'s own branch at depth $j'$, then
+$d(c,p)=|j'-j|\le m$, too small.  If $c$ lies on the branch over
+$b''\ne b$ at depth $j''$, let $w$ be the tip
+of $p$'s branch (depth $m$; it exists and lies in $G_{i+1}$).  Then
 \[
  d(c,w)=j''+d(b'',b)+m=d(c,p)+(m-j)\ \ge\ r(B)+m+1=\ecc(c),
 \]
 so $d(c,w)=\ecc(c)$, and uniqueness in $\mathrm{UEP}(c,u)$ forces $w=u$;
 but $w\in V(G_{i+1})$ while $u\notin V(G_{i+1})$, a contradiction.
-\end{itemize}
 
 This completes the induction: $G=G_0=S_k(B)$, and
 $r(G)=r(B)+k$ because the stripping chain drops the radius by exactly one
-per step (Propositions~\ref{prop:strip} and~\ref{prop:stripsvrd}).
+per step (\cref{prop:strip,prop:stripsvrd}).
 Moreover every vertex of $B$ has degree $\ell+1$ in $G$ for the appropriate
-layer, as asserted in Theorem~\ref{thm:vrd}.
+layer, as asserted in \cref{thm:vrd}.
 \end{proof}
 
 \begin{corollary}[$t\ge 2r$ for vrd graphs with a cut vertex]
@@ -531,22 +556,22 @@ If $G$ is vrd with a cut vertex, then $t(G)\ge2\,r(G)$.
 \end{corollary}
 
 \begin{proof}
-Write $G=S_k(B)$ as in Theorem~\ref{thm:vrdproof}, $s=r(B)\ge1$.
+Write $G=S_k(B)$ as in \cref{thm:vrdproof}, $s=r(B)\ge1$.
 Take a geodesic $Q$ of $B$ (order at least $s+1$,
-Lemma~\ref{lem:geod}).  The union of $V(Q)$ with, for each $q\in Q$, the
+\cref{lem:geod}).  The union of $V(Q)$ with, for each $q\in Q$, the
 $\ell$-vertex pendant path attached to $q$, induces a tree: pendant paths
 are internally disjoint, there are no edges between distinct pendant paths,
-and $Q$ is induced in $B$ (Lemma~\ref{lem:geod}); its order is at least
+and $Q$ is induced in $B$ (\cref{lem:geod}); its order is at least
 \[
  (s+1)(k+1)\ \ge\ 2(s+k)\ =\ 2\,r(G)
 \]
-by Lemma~\ref{lem:count}(i).
+by \cref{lem:count}(i).
 \end{proof}
 
 \begin{remark}
 The case $B=K_2$ needs no special treatment: $K_2$ satisfies
-Proposition~\ref{prop:block} with $f$ the transposition, and equality holds
-throughout Corollary~\ref{cor:vrd-tree} ($G=P_{2k+2}$, $t=2r$).
+\cref{prop:block} with $f$ the transposition, and equality holds
+throughout \cref{cor:vrd-tree} ($G=P_{2k+2}$, $t=2r$).
 \end{remark}
 
 \begin{remark}[Historical credit]
@@ -561,95 +586,92 @@ did not consult the original arguments.
 
 \section{The leaf lemma}\label{sec:leaf}
 
-\begin{proof}[Proof of Lemma~\ref{lem:leaf}]
+\begin{proof}[Proof of \cref{lem:leaf}]
 Suppose the lemma fails and let $G$ be a counterexample of minimum order:
 $G$ connected with a leaf $u$ and $t(G)<2r(G)$, while every smaller connected
 graph with a leaf satisfies the lemma.  Let $a=p(u)$ and $r=r(G)$.
 
 If $r=1$, the edge $ua$ induces a tree on $2=2r$ vertices, a contradiction.
-So $r\ge2$; by Lemma~\ref{lem:small} $|V(G)|\ge4$, and $a$ is a cut vertex
-(Lemma~\ref{lem:leafbasics}(iv)).
+So $r\ge2$; by \cref{lem:small} $|V(G)|\ge4$, and $a$ is a cut vertex
+(\cref{lem:leafbasics}(iv)).
 
-\begin{description}[itemsep=2pt]
-\item[Claim 1.] For every non-cut vertex $v\ne u$ of $G$:
-      $r(G-v)=r-1$.
-      Indeed $v\ne a$ (as $a$ is a cut vertex and $v$ is not), so $G-v$ is
-      connected and still has the leaf $u$.  If $r(G-v)\ge r$, minimality
-      gives $t(G-v)\ge2r(G-v)\ge2r$, while $t(G-v)\le t(G)$
-      (Lemma~\ref{lem:count}(ii)) --- a contradiction.  So $r(G-v)<r$, and
-      Lemma~\ref{lem:drop1} gives $r(G-v)=r-1$.
-\item[Setup.] Let $H=G-u$.  By Lemma~\ref{lem:leafbasics}, distances among
-      $V(H)$ agree in $G$ and $H$, and $u$ is not central; hence centres of
-      $G$ survive in $H$ and $r(H)\le r$.  If $r(H)<r$, then $u$ is a
-      non-cut vertex and Lemma~\ref{lem:drop1} gives $r(H)=r-1$.  So
-      $r(H)\in\{r-1,\,r\}$.
-\end{description}
+\emph{Claim 1.} \emph{For every non-cut vertex $v\ne u$ of $G$:
+$r(G-v)=r-1$.}
+Indeed $v\ne a$ (as $a$ is a cut vertex and $v$ is not), so $G-v$ is
+connected and still has the leaf $u$.  If $r(G-v)\ge r$, minimality
+gives $t(G-v)\ge2r(G-v)\ge2r$, while $t(G-v)\le t(G)$
+(\cref{lem:count}(ii)) --- a contradiction.  So $r(G-v)<r$, and
+\cref{lem:drop1} gives $r(G-v)=r-1$.
+
+\emph{Setup.} Let $H=G-u$.  By \cref{lem:leafbasics}, distances among
+$V(H)$ agree in $G$ and $H$, and $u$ is not central; hence centres of
+$G$ survive in $H$ and $r(H)\le r$.  If $r(H)<r$, then $u$ is a
+non-cut vertex and \cref{lem:drop1} gives $r(H)=r-1$.  So
+$r(H)\in\{r-1,\,r\}$.
 
 \medskip
-\noindent\textbf{Case A: $r(H)=r-1$.}
+\noindent\textbf{Case A} ($r(H)=r-1$).
 Then every non-cut vertex of $G$ deletes the radius to $r-1$: $u$ by the
 case assumption, all others by Claim 1.  So $G$ is vrd with the cut vertex
-$a$, and Corollary~\ref{cor:vrd-tree} gives $t(G)\ge2r$ --- a contradiction.
+$a$, and \cref{cor:vrd-tree} gives $t(G)\ge2r$ --- a contradiction.
 (Minimality is not needed in this case.)
 
 \medskip
-\noindent\textbf{Case B: $r(H)=r$.}
+\noindent\textbf{Case B} ($r(H)=r$).
 
-\begin{description}[itemsep=2pt]
-\item[Claim 2.] $H$ has no leaf; in particular $\delta(H)\ge2$.
-      Otherwise $H$ is a smaller connected graph with a leaf and
-      $r(H)=r$, so minimality gives $t(H)\ge2r(H)=2r$; but
-      $t(G)\ge t(H)$ (Lemma~\ref{lem:count}(ii)), contradiction.
-\item[Claim 3.] For every non-cut vertex $v\ne a$ of $H$:
-      $r(H-v)=r-1$.
-      $G-v$ is obtained from the connected graph $H-v$ by re-attaching the
-      leaf $u$ at $a$, hence is connected; so $v$ is a non-cut vertex of
-      $G$, and Claim 1 gives $r(G-v)=r-1$.  The graph $G-v$ has at least
-      three vertices, so its leaf $u$ is not central
-      (Lemma~\ref{lem:leafbasics}(iii)); hence centres of $G-v$ survive in
-      $H-v$ and $r(H-v)\le r-1$.  The reverse inequality is
-      Lemma~\ref{lem:drop1} (as $r(H)=r$ and $v$ is a non-cut vertex of
-      $H$).
-\item[Claim 4.] $H$ has no cut vertex.
-      Claims 2 and 3 and Lemma~\ref{lem:dropuep} imply that every non-cut
-      vertex $v\ne a$ is a central vertex's UEP and has degree at least two.
-      The neighbour argument in Proposition~\ref{prop:ncvleaf} therefore
-      shows that every neighbour of $v$ is also a non-cut vertex.
-      Choose a non-cut vertex $v\ne a$; two distinct non-cut vertices exist
-      by the longest-path argument.
-      If $a$ were a cut vertex, the non-cut property would propagate along
-      any path starting at $v$: a non-cut vertex can never equal $a$, so
-      the neighbour implication applies at every step. A path from $v$
-      to $a$ would give a contradiction. Thus $a$ is a non-cut vertex.
-      For any $w\ne a$, choose a $v$--$w$ path in the connected graph $H-a$.
-      Propagating the same implication along this path shows that $w$
-      is a non-cut vertex. Hence every vertex of $H$ is a non-cut vertex.
-\end{description}
+\emph{Claim 2.} \emph{$H$ has no leaf; in particular $\delta(H)\ge2$.}
+Otherwise $H$ is a smaller connected graph with a leaf and
+$r(H)=r$, so minimality gives $t(H)\ge2r(H)=2r$; but
+$t(G)\ge t(H)$ (\cref{lem:count}(ii)), contradiction.
+
+\emph{Claim 3.} \emph{For every non-cut vertex $v\ne a$ of $H$:
+$r(H-v)=r-1$.}
+$G-v$ is obtained from the connected graph $H-v$ by re-attaching the
+leaf $u$ at $a$, hence is connected; so $v$ is a non-cut vertex of
+$G$, and Claim 1 gives $r(G-v)=r-1$.  The graph $G-v$ has at least
+three vertices, so its leaf $u$ is not central
+(\cref{lem:leafbasics}(iii)); hence centres of $G-v$ survive in
+$H-v$ and $r(H-v)\le r-1$.  The reverse inequality is
+\cref{lem:drop1} (as $r(H)=r$ and $v$ is a non-cut vertex of
+$H$).
+
+\emph{Claim 4.} \emph{$H$ has no cut vertex.}
+Claims 2 and 3 and \cref{lem:dropuep} imply that every non-cut
+vertex $v\ne a$ is a central vertex's UEP and has degree at least two.
+The neighbour argument in \cref{prop:ncvleaf} therefore
+shows that every neighbour of $v$ is also a non-cut vertex.
+Choose a non-cut vertex $v\ne a$; two distinct non-cut vertices exist
+by the longest-path argument.
+If $a$ were a cut vertex, the non-cut property would propagate along
+any path starting at $v$: a non-cut vertex can never equal $a$, so
+the neighbour implication applies at every step. A path from $v$
+to $a$ would give a contradiction. Thus $a$ is a non-cut vertex.
+For any $w\ne a$, choose a $v$--$w$ path in the connected graph $H-a$.
+Propagating the same implication along this path shows that $w$
+is a non-cut vertex. Hence every vertex of $H$ is a non-cut vertex.
 
 By Claim 4 every vertex of $H$ is a non-cut vertex.  For each $v\ne a$,
-Claim 3 and Lemma~\ref{lem:dropuep} provide a central $c_v$ with
+Claim 3 and \cref{lem:dropuep} provide a central $c_v$ with
 $\mathrm{UEP}(c_v,v)$; distinct $v$ give distinct $c_v$
-(Lemma~\ref{lem:uepunique}).  So with $n=|V(H)|$, at least $n-1$ vertices of
+(\cref{lem:uepunique}).  So with $n=|V(H)|$, at least $n-1$ vertices of
 $H$ are central.
 
-\begin{description}[itemsep=2pt]
-\item[Claim 5.] $H$ is self-centered.
-      If some $b$ were non-central, then every $y\ne b$ is central, whence
-      $d(y,b)\le r$, so $d(b,y)\le r$ and $\ecc(b)\le r$; but always
-      $\ecc(b)\ge r(H)=r$.  Hence $\ecc(b)=r$ and $b$ is central, a
-      contradiction.
-\end{description}
+\emph{Claim 5.} \emph{$H$ is self-centered.}
+If some $b$ were non-central, then every $y\ne b$ is central, whence
+$d(y,b)\le r$, so $d(b,y)\le r$ and $\ecc(b)\le r$; but always
+$\ecc(b)\ge r(H)=r$.  Hence $\ecc(b)=r$ and $b$ is central, a
+contradiction.
 
 Form the auxiliary graph $D$ on $V(H)$ by putting $xy\in E(D)$ iff
 $d_H(x,y)=r$.  Since $H$ is self-centered and finite, every vertex has a
 vertex at distance exactly $r$: $\delta(D)\ge1$.  For each $v\ne a$, $c_v$
 is adjacent to $v$ in $D$ and $\deg_D(c_v)=1$ (any other $w$ with
 $d(c_v,w)=r$ would violate $\mathrm{UEP}(c_v,v)$).  So every $v\ne a$ has a
-degree-one neighbour, and Lemma~\ref{lem:aux} provides $c$ adjacent to $a$
+degree-one neighbour, and \cref{lem:aux} provides $c$ adjacent to $a$
 in $D$ with $\deg_D(c)=1$.  Thus $d_H(c,a)=r$ and $a$ is the unique vertex
 at distance $r$ from $c$; by Claim 5, $c$ is central, so
-$\mathrm{UEP}(c,a)$.  Lemma~\ref{lem:uepdrop} gives $r(H-a)=r-1$, and $a$
-is a non-cut vertex of $H$ (Claim 4).  Lemma~\ref{lem:rooted-chung} yields
+$\mathrm{UEP}(c,a)$.  \cref{lem:uepdrop} gives $r(H-a)=r-1$, and $a$
+is a non-cut vertex of $H$ (Claim 4).  \cref{lem:rooted-chung} yields
 an induced path $P$ of $H$ with $|P|\ge2r-1$ and $a\in P$.
 
 Finally, $u$ is adjacent in $G$ only to $a\in P$, so $G[V(P)\cup\{u\}]$ is
@@ -668,9 +690,9 @@ equivalently $t(G)\ge 2r(G)/\delta(G)$.
 
 \begin{proof}
 A connected nontrivial graph has $r(G)\ge1$ and $\delta(G)\ge1$.
-If $\delta(G)\ge2$, Lemma~\ref{lem:geod} gives $t(G)\ge r(G)+1$, so
+If $\delta(G)\ge2$, \cref{lem:geod} gives $t(G)\ge r(G)+1$, so
 $t(G)\delta(G)\ge 2(r(G)+1)>2r(G)$.
-If $\delta(G)=1$, $G$ has a leaf, and Lemma~\ref{lem:leaf} gives
+If $\delta(G)=1$, $G$ has a leaf, and \cref{lem:leaf} gives
 $t(G)\ge2r(G)$, so $t(G)\delta(G)=t(G)\ge2r(G)$.
 \end{proof}
 
@@ -681,28 +703,19 @@ vertex is a pendant attachment to a long induced path; in Case A the tree is
 assembled from several pendant branches over a geodesic of the core block.
 \end{remark}
 
-\section{Formalization notes}
+\section{Supplementary Lean 4 formalization}\label{sec:lean}
 
-The proof decomposes into Lean modules as follows.
-\begin{enumerate}[label=(\roman*)]
-\item elementary facts (Section~\ref{sec:elem}): geodesics, radius bookkeeping,
-      UEP drop and converse, leaves;
-\item the rooted Chung lemma (Lemma~\ref{lem:rooted-chung});
-\item the structure theorem (Section~\ref{sec:vrd}): Propositions
-      \ref{prop:ncvleaf}--\ref{prop:block} and Theorem~\ref{thm:vrdproof};
-\item the leaf lemma (Section~\ref{sec:leaf});
-\item the arithmetic assembly (Theorem~\ref{thm:main}).
-\end{enumerate}
-The Case B non-cut argument now uses only paths and the existence of two
-non-cut vertices, eliminating the former block-tree prerequisite.
-The companion Lean package follows a shorter route for Case A: direct
-induction by peeling leaves, without the full structural classification
-presented in this manuscript. Its final declarations are
-\texttt{Graffiti84.leafLemma} and \texttt{Graffiti84.\allowbreak graphConjecture84}.
-The exact commit's GitHub Actions run checks the declarations and prints
-their axiom dependencies. A guide to the formal proof is kept in
-\texttt{docs/formal-proof-guide.md}; this manuscript retains the historical
-classification route.
+An accompanying Lean~4/Mathlib development formalizes the leaf lemma and the
+final theorem together with their principal ingredients, under the pinned
+toolchain Lean and Mathlib~4.32.2.  For Case A the formal proof deliberately
+takes a shorter route than this manuscript: direct induction by peeling
+leaves off a maximum induced tree, without the structural classification of
+\cref{sec:vrd}.  The continuous-integration build of the repository compiles
+every module on a clean runner, scans the sources for proof placeholders and
+custom axioms, and prints the axiom dependencies of the final declarations,
+which are the three standard Lean axioms only.  The formalization is
+supplementary: the mathematical proof in this article is self-contained, and
+\cref{app:map} provides a navigation map between the two developments.
 
 \begin{thebibliography}{9}
 
@@ -710,18 +723,19 @@ classification route.
 P.~Erd\H{o}s, M.~Saks, and V.~T.~S\'os,
 \emph{Maximum induced trees in graphs},
 J. Combin. Theory Ser. B \textbf{41} (1986), 61--79.
-doi:10.1016/0095-8956(86)90028-6.
+\url{https://doi.org/10.1016/0095-8956(86)90028-6}
 
 \bibitem{ChungCredit}
-Fan Chung's proof of the induced-path bound in \cite{ESS1986}
-(Theorem 2.2 there); our Lemma~\ref{lem:rooted-chung} is a rooted variant of
-her construction, with the proof written out in full.
+F.~R.~K.~Chung,
+proof of the induced-path bound, Theorem~2.2 of \cite{ESS1986};
+\cref{lem:rooted-chung} is a rooted variant of her construction, with the
+proof written out in full.
 
 \bibitem{Fajtlowicz1988}
 S.~Fajtlowicz,
 \emph{A characterization of radius-critical graphs},
 J. Graph Theory \textbf{12} (1988), 529--532.
-doi:10.1002/jgt.3190120409.
+\url{https://doi.org/10.1002/jgt.3190120409}
 
 \bibitem{Gliviak1976}
 F.~Gliviak,
@@ -737,13 +751,78 @@ Math. Bohem. \textbf{125} (2000), 215--225.
 \bibitem{Swart1996}
 C.~S.~Swart,
 \emph{Distance Measures in Graphs and Subgraphs},
-M.Sc. thesis, University of Natal, 1996.
+M.Sc.\ thesis, University of Natal, 1996.
 
 \bibitem{WestGraffiti}
 D.~B.~West,
-\emph{Some Conjectures of Graffiti.pc},
-online catalogue, entry 84.
+\emph{Some conjectures of Graffiti.pc},
+online catalogue, entry 84 (2004).
 
 \end{thebibliography}
+
+\appendix
+\section{Formal theorem map}\label{app:map}
+
+This map is provided for navigation of the supplementary source and is not
+part of the logical dependency of the manuscript.  The Case~A branch of the
+Lean proof uses the shorter leaf-peeling induction mentioned in
+\cref{sec:lean}; the remaining rows correspond to statements proved in both
+developments.  The principal correspondences are:
+
+\begin{center}
+\small
+\begin{tabular}{@{}P{5.6cm}P{9.0cm}@{}}
+\toprule
+Mathematical statement & Lean declaration / file \\
+\midrule
+Geodesics induce paths; $t\ge r+1$ &
+\texttt{two\_radius\_le\_treeNumber\_mul\_minDegree}\newline
+\texttt{GraphConjecture84.lean} \\
+Radius drops by at most one &
+\texttt{radOn\_le\_radOn\_erase\_add\_one}\newline
+\texttt{BasicFacts.lean} \\
+UEP I: the drop &
+\texttt{isUniqueEccentricPoint\_of\_induce\_radius\_drop}\newline
+\texttt{Deletion.lean} \\
+UEP II: the converse &
+\texttt{induce\_radius\_drop\_of\_central\_uep}\newline
+\texttt{Deletion.lean} \\
+A vertex has at most one UEP &
+\texttt{isUniqueEccentricPoint\_unique}\newline
+\texttt{BasicFacts.lean} \\
+Two non-cut vertices &
+\texttt{exists\_two\_deleteConnected}\newline
+\texttt{EndBlocks.lean} \\
+Unique leaf neighbour &
+\texttt{unique\_leaf\_neighbor}\newline
+\texttt{EndBlocks.lean} \\
+Auxiliary degree-one lemma &
+\texttt{degree\_one\_neighbor\_of\_all\_other}\newline
+\texttt{RadiusCriticalStructure.lean} \\
+Rooted Chung lemma &
+\texttt{rooted\_chung}\newline
+\texttt{RootedChung.lean} \\
+Case B: non-cut closure &
+\texttt{deleteConnected\_all\_of\_drop\_except}\newline
+\texttt{EndBlocks.lean} \\
+Case B: all vertices central; UEP for $a$ &
+\texttt{isCentral\_all\_of\_uep\_except},\newline
+\texttt{central\_uep\_of\_uep\_except}\newline
+\texttt{CaseB.lean} \\
+Case B: rooted induced tree &
+\texttt{rooted\_tree\_of\_drop\_except}\newline
+\texttt{CaseB.lean} \\
+Case A branch (peeling route) &
+\texttt{vrd\_cut\_tree\_bound}\newline
+\texttt{CaseA.lean} \\
+Leaf lemma &
+\texttt{leafLemma}\newline
+\texttt{LeafLemma.lean} \\
+Main theorem &
+\texttt{graphConjecture84}\newline
+\texttt{GraphConjecture84.lean} \\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \end{document}
