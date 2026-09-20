@@ -3,11 +3,9 @@ import Graffiti84.BasicFacts
 /-!
 # RootedChung
 
-The rooted Chung lemma (Lemma 2.1 of `docs/full-proof.md`): if deleting the
-non-cut vertex `a` lowers the radius by exactly one, the graph contains an
-induced path on at least `2r - 1` vertices **containing `a`**.
-
-Batch A: distance infrastructure along geodesics.
+The rooted Chung lemma: if deleting the non-cut vertex `a` lowers the radius
+by exactly one, the graph contains an induced path on at least `2r - 1`
+vertices **containing `a`**.
 -/
 
 namespace Graffiti84

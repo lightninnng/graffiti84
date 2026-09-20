@@ -39,8 +39,7 @@ assumptions are exactly the hypotheses of the conjecture.
 ## Evidence
 
 All of the following runs automatically in CI on every push
-(`.github/workflows/ci.yml`); the latest run on `main` (commit `ee9af97`)
-reports:
+(`.github/workflows/ci.yml`); the latest run on `main` reports:
 
 1. **Clean-room build passes.** On a fresh Ubuntu runner CI installs elan,
    resolves dependencies, fetches the Mathlib cache, and runs `lake build`,
@@ -61,9 +60,6 @@ reports:
    These are Lean's logical axioms (propositional extensionality, classical
    choice, quotients) that every Mathlib theorem also depends on; nothing
    graph-theoretic or arithmetic is assumed.
-
-Compilation status is always taken from the GitHub Actions run of the commit
-under review; no trust in any local environment is required.
 
 ## Independent verification
 
@@ -124,22 +120,15 @@ The proof line (see the [guide](docs/formal-proof-guide.md), in Chinese):
 - [Guide to the final formal proof (Chinese)](docs/formal-proof-guide.md) —
   a section-by-section walkthrough
 - [The Case A leaf-peeling induction (Chinese)](docs/case-a-induction.md)
-- [Lean/Mathlib API notes](docs/lean-api-notes.md) — every entry traces to a
-  real CI failure
 - [Final theorem source](Graffiti84/GraphConjecture84.lean) ·
   [Leaf lemma source](Graffiti84/LeafLemma.lean)
 - `paper/graffiti84.tex` (with PDF) — the self-contained pen-and-paper proof
-
-`docs/full-proof.md` and `docs/conjecture-logic.md` keep the earlier
-structural-classification route for historical reference; they are not a
-line-by-line account of the final Lean proof. The Lean sources and the CI
-results are authoritative.
 
 ## Layout
 
 ```text
 Graffiti84/   13 Lean modules plus the aggregate entry Graffiti84.lean
-docs/         proof guides and route documents
+docs/         proof guides
 paper/        pen-and-paper proof (LaTeX/PDF)
 scripts/      CI audit scripts (sorry/admit/axiom scan and #print axioms)
 ```

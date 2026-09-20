@@ -3,7 +3,7 @@ import Mathlib
 /-!
 # BasicFacts
 
-Foundational layer for the Graffiti84 proof (Phase 1 of `docs/full-proof.md`).
+Foundational layer for the Graffiti84 proof.
 
 We use a *set-relative deletion framework*: instead of forming the subgraph
 `G - v` (whose Mathlib version changes the vertex type), we keep the ambient
@@ -20,7 +20,7 @@ proof that the relevant shortest walks avoid the deleted vertex.
   walk avoiding `v` (paper: "`G - v` is connected");
 * `IsCut G v` : `v` is a cut vertex.
 
-Facts proved here (numbering of `docs/full-proof.md`):
+Facts proved here:
 F3  `radOn_le_radOn_erase_add_one`   — radius drops by at most one;
 F6  `one_add_eccent_parent_le_eccOn` — `1 + ecc(p) ≤ ecc(leaf)` (leaf not central);
 F11 `isCut_of_isLeaf`                — the neighbour of a leaf is a cut vertex;
@@ -300,7 +300,7 @@ lemma isUniqueEccentricPoint_unique {G : SimpleGraph α} {c x x' : α}
   exact absurd hlt (lt_irrefl _)
 
 
-/-! ## Batch 2: walk toolkit and the UEP criterion (F7, F8, F5) -/
+/-! ## Walk toolkit and the UEP criterion (F7, F8, F5) -/
 
 /-- Prepending an edge costs at most one: `d(u, w) <= 1 + d(v, w)` when
 `u ~ v` and `v` reaches `w`. -/
@@ -717,7 +717,7 @@ lemma treeNumber_mono_erase {G : SimpleGraph α} {v : α} :
   exact Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ S, htree⟩)
 
 
-/-! ### Batch 3b: geodesic structure (F1, F2, potential-function acyclicity) -/
+/-! ### Geodesic structure (F1, F2, potential-function acyclicity) -/
 
 /-- **F1a.** A walk realizing the distance has no repeated vertex: any repeat
 could be cut out, shortening the walk below the distance. -/

@@ -4,21 +4,10 @@ import Graffiti84.BasicFacts
 /-!
 # RadiusCriticalStructure
 
-Lean 4.32.2 / Mathlib 4.32.2.
-
-This module contains the radius-critical / unique-eccentric-point layer used
-in the proof of Graffiti.pc Conjecture 84.
-
-Status of this snapshot:
-* no forbidden proof placeholders and no custom declarations by assumption;
-* all declared theorems are genuinely proved (CI-audited);
-* the full Gliviak--Fajtlowicz vrd-corona structure theorem is NOT declared
-  yet; its exact target is recorded at the bottom of this file.
-
-The auxiliary lemma `degree_one_neighbor_of_all_other` is the formal
-counterpart of Lemma F15 in `docs/full-proof.md`; the eccentricity lemma
-formalizes F5/F6 prerequisites.  Both were rewritten against the actual
-Mathlib `Diam`/`Metric` API (`eccent` as an `ENat` iSup, `edist`, `dist`).
+The radius-critical / unique-eccentric-point layer of the proof of
+Graffiti.pc Conjecture 84: natural-valued radius and eccentricity, the
+positivity of eccentricities, and the degree-one-neighbour lemma used in
+Case B of the leaf lemma.
 -/
 
 namespace Graffiti84
@@ -38,9 +27,6 @@ noncomputable def radiusNat (G : SimpleGraph α) : ℕ :=
 noncomputable def eccNat (G : SimpleGraph α) (v : α) : ℕ :=
   G.eccent v |>.toNat
 
--- `IsCentral` and `IsUniqueEccentricPoint` now live in `BasicFacts`
--- (together with F9).
-
 /--
 Every vertex of a connected finite nontrivial graph has positive
 eccentricity (F5/F6 prerequisite).
@@ -59,8 +45,7 @@ lemma eccNat_pos_of_connected_nontrivial
   exact ENat.toNat_pos hne0 hxt
 
 /--
-Elementary finite auxiliary-graph lemma used in Case B of the Leaf Lemma
-(F15 in `docs/full-proof.md`).
+Elementary finite auxiliary-graph lemma used in Case B of the Leaf Lemma.
 
 If a finite simple graph has minimum degree at least one and every vertex
 except `a` has a degree-one neighbour, then `a` also has a degree-one
@@ -136,25 +121,5 @@ theorem degree_one_neighbor_of_all_other
     exact hxw ((Finset.card_le_one.mp hcon1) x hxmem w hwmem)
   have h2' : 2 ≤ D.degree z := by simpa using h2
   omega
-
-/-!
-## Remaining theorem-specific structure target
-
-The full local formalization still needed for the Case-A branch is the
-Gliviak--Fajtlowicz / Swart vertex-radius-decreasing structure theorem,
-reproved semantically in `docs/full-proof.md` (Section 3).
-
-We intentionally DO NOT declare it with an unproved body.
-
-Target mathematical interface:
-
-```
-theorem vrd_with_cut_vertex_structure ...
-```
-
-It should produce enough data to construct an induced tree of order at least
-`2 * radiusNat G`; a full graph-isomorphism-to-corona statement is stronger
-than necessary and is therefore not required.
--/
 
 end Graffiti84

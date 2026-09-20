@@ -24,10 +24,8 @@ open Classical
 open SimpleGraph
 
 /--
-F13 (geodesic count): for `s, l >= 1`, a geodesic of the core block with all
+Geodesic count: for `s, l >= 1`, a geodesic of the core block with all
 full-length pendant paths already yields `(s+1)(l+1) >= 2(s+l)` vertices.
-This is the count used by the simplified proof (Corollary 3.B in
-`docs/full-proof.md`); the ESS-based count of the original draft is gone.
 -/
 theorem tip_tree_count
     {s l : ℕ} (hs : 1 ≤ s) (hl : 1 ≤ l) :
