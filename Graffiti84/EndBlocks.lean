@@ -818,9 +818,8 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
       SimpleGraph.Walk.length_dropLast p] at h
     rw [hpen] at h
     exact h
-  have hlen : p.length - 1 + 1 = p.length := by omega
   calc G.dist c b + 1 ≤ p.length - 1 + 1 := by omega
-    _ = p.length := hlen
+    _ = p.length := by omega
     _ = G.dist c u := hsu.symm
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -856,7 +855,6 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       have hqpen : q.penultimate = b :=
         penultimate_eq_of_leaf_end hu hub q hqne
       have hpend : q.penultimate = t2 := hqpen.trans hrb.symm
-      rw [hpend] at hqne ⊢
       refine ⟨(q.dropLast.append rt), ?_⟩
       intro z hz
       rw [SimpleGraph.Walk.support_append, List.mem_append] at hz
@@ -926,10 +924,10 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         exact h2 hzu
     · exact ⟨w, hum⟩
   have h2 : 2 ≤ Fintype.card α := by
-    obtain ⟨z, hz⟩ := exists_ne u
-    obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u z
+    have hzu : u ≠ u' := hne
+    obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist u u'
     cases w with
-    | nil => exact absurd rfl hz
+    | nil => exact absurd rfl hzu
     | cons h t' =>
         have hpos : 0 < G.degree u :=
           G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩
@@ -941,7 +939,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   have hdcb : G.dist c_u b + 1 = (G.eccent c_u).toNat := by
     have h1 : G.dist c_u u ≤ G.dist c_u b + 1 := by
       have htr := hconn.dist_triangle (u := c_u) (v := b) (w := u)
-      have hb1 : G.dist b u ≤ 1 := dist_le_one_of_adj hub
+      have hb1 : G.dist b u ≤ 1 :=
+        dist_le_one_of_adj (SimpleGraph.Adj.symm hub)
       omega
     omega
   -- u' also sits at distance r - 1 + 1 = r from c_u, contradicting UEP
