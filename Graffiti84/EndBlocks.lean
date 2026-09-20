@@ -777,7 +777,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
       | nil => intro ha; exact ha
       | @cons x y c' h t ih =>
           intro ha
-          exact ih (hstep x ha y (SimpleGraph.Adj.symm h))    exact hgo b w hvS)
+          -- ha : v ∈ S, h : G.Adj v x; hstep keeps the hop inside S
+          exact ih (hstep v ha x (SimpleGraph.Adj.symm h))
+    exact hgo b w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
 leaves. -/
