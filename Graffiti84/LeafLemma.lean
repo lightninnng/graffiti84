@@ -215,8 +215,9 @@ theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
             SimpleGraph.nontrivial_of_degree_ne_zero (G := D) (v := uD) (by rw [huD]; omega)
           have hD : D.Connected := (connected_induce_erase_iff v).mpr hv
           have hIH := ih _ (small v) {x // x ∈ Finset.univ.erase v} D
-            (by apply Fintype.card_congr; exact Equiv.refl _) hD ⟨uD, huD⟩
-          have ht := treeNumber_induce_le F (Finset.univ.erase v)
+            (by congr!) hD ⟨uD, huD⟩
+          have ht : treeNumber D ≤ treeNumber F := by
+            convert treeNumber_induce_le F (Finset.univ.erase v) using 1 <;> congr!
           have hrlt : D.radius.toNat < F.radius.toNat := by omega
           have hd := enat_add_one_le_of_toNat_lt (finite_radius_of_connected hD) hFtop hrlt
           rw [radOn_univ_eq_radius]
@@ -255,8 +256,9 @@ theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
             by_contra hh
             have hv : H.degree v = 1 := by omega
             have hIH := ih _ (small u) {x // x ∈ Finset.univ.erase u} H
-              (by apply Fintype.card_congr; exact Equiv.refl _) hH ⟨v, hv⟩
-            have ht := treeNumber_induce_le F (Finset.univ.erase u)
+              (by congr!) hH ⟨v, hv⟩
+            have ht : treeNumber H ≤ treeNumber F := by
+              convert treeNumber_induce_le F (Finset.univ.erase u) using 1 <;> congr!
             omega
           have hdropH : ∀ v : {x // x ∈ Finset.univ.erase u}, v.val ≠ a →
               DeleteConnected H v → radOn H (Finset.univ.erase v) + 1 ≤ H.radius := by
