@@ -650,7 +650,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         rw [SimpleGraph.Walk.length_nil] at hw
         omega
     | cons h t' =>
-        exact absurd (G.degree_pos_iff_exists_adj v |>.mpr ⟨_, h⟩) h0
+        have hpos : 0 < G.degree v := G.degree_pos_iff_exists_adj v |>.mpr ⟨_, h⟩
+        omega
   have hdeg2 : 2 ≤ G.degree v := by
     rcases Nat.lt_or_ge (G.degree v) 2 with h | h
     · omega
@@ -737,11 +738,12 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
           exact hWmem b |>.mpr hbnc
   have hvS : v ∈ S := by
     rw [hSdef]
-    simp only [Finset.mem_filter, Finset.mem_univ, hWmem v |>.mpr hv, and_true]
-    refine ⟨SimpleGraph.Walk.nil, ?_⟩
-    rw [SimpleGraph.Walk.support_nil]
-    intro t ht
-    exact ht rfl
+    simp only [Finset.mem_filter, Finset.mem_univ]
+    refine ⟨hWmem v |>.mpr hv, ?_⟩
+    exact ⟨SimpleGraph.Walk.nil, by
+      intro t ht
+      rw [SimpleGraph.Walk.support_nil] at ht
+      exact ht rfl⟩
   have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
     hstep u hu z huz
   -- the cut vertex a is neither in W nor in S
