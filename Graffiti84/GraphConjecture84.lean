@@ -108,4 +108,23 @@ theorem two_radius_le_treeNumber_mul_minDegree {G : SimpleGraph α} [Nonempty α
   exact final_arithmetic G.radius.toNat (minDegree G) (treeNumber G) hr
     (by omega) (fun h0 => absurd h0 (by omega)) (fun _ => h1)
 
+/-- Graffiti.pc Conjecture 84 for finite connected nontrivial simple graphs. -/
+theorem graphConjecture84 {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
+    (G : SimpleGraph α) (hG : G.Connected) :
+    2 * G.radius.toNat ≤ treeNumber G * minDegree G := by
+  classical
+  have hmin : 1 ≤ minDegree G := by
+    apply Finset.le_inf'
+    intro v _
+    exact hG.preconnected.degree_pos_of_nontrivial v
+  by_cases hleaf : ∃ v, G.degree v = 1
+  · have hb := leafLemma G hG hleaf
+    exact le_trans hb (by simpa using Nat.mul_le_mul_left (treeNumber G) hmin)
+  · apply two_radius_le_treeNumber_mul_minDegree hG
+    apply Finset.le_inf'
+    intro v _
+    have hp := hG.preconnected.degree_pos_of_nontrivial v
+    have hn : G.degree v ≠ 1 := fun he => hleaf ⟨v, he⟩
+    omega
+
 end Graffiti84

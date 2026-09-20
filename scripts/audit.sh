@@ -10,4 +10,4 @@ command -v python3 >/dev/null 2>&1 || PY=python
 
 lake build
 lake env lean scripts/axioms.lean
-echo "All implemented layers built; final leafLemma/graphConjecture84 remain open."
+echo "All layers, leafLemma and graphConjecture84 built; axiom dependencies printed above."

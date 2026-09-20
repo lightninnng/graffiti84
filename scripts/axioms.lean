@@ -1,7 +1,9 @@
 import Graffiti84
 
--- Audit implemented results. The final leaf lemma and Conjecture 84 are
--- deliberately absent: they have not yet been formalized.
+-- Audit the final theorem and its major ingredients.
+#print axioms Graffiti84.vrd_cut_tree_bound
+#print axioms Graffiti84.leafLemma
+#print axioms Graffiti84.graphConjecture84
 #print axioms Graffiti84.unique_leaf_neighbor
 #print axioms Graffiti84.deleteConnected_all_of_drop_except
 #print axioms Graffiti84.isCentral_all_of_uep_except
