@@ -145,7 +145,11 @@ theorem leaf_bound_of_caseB {α : Type*} [Fintype α] [DecidableEq α]
     (deleteConnected_of_isLeaf hconn hu)
   haveI : Nontrivial {v // v ∈ Finset.univ.erase u} :=
     SimpleGraph.nontrivial_of_degree_ne_zero (G := H) (v := aH)
-      (by have := hdeg aH; omega)
+      (by
+        intro hzero
+        have hh : 2 ≤ H.degree aH := hdeg aH
+        rw [hzero] at hh
+        omega)
   obtain ⟨T, hT, haT, hcard⟩ := rooted_tree_of_drop_except hH aH
     (by simpa only [H, hrad] using hr2) hdeg (by
       intro v hva hv
