@@ -128,4 +128,62 @@ theorem radius_eq_nonleaf_radius_add_one {G : SimpleGraph α} (hconn : G.Connect
       (edist_lt_eccent_of_dist_lt hconn (hcu.2 x.val hxu))
     _ = G.radius := hc
 
+/-- Every core vertex is a cut vertex in a vrd graph with a cut vertex. -/
+lemma isCut_of_mem_nonleafSet {G : SimpleGraph α} [Nontrivial α]
+    (hconn : G.Connected)
+    (hmono : ∀ z, DeleteConnected G z →
+      radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
+    (hcut : ∃ a, IsCut G a) {w : α} (hw : w ∈ nonleafSet G) : IsCut G w := by
+  haveI : Nonempty α := ⟨w⟩
+  intro hdel
+  exact mem_nonleafSet.mp hw (degree_eq_one_of_nonCut_of_hasCut hconn hmono hcut hdel)
+
+/-- A non-cut vertex of the core has a leaf attached in the original graph. -/
+theorem core_noncut_has_leaf {G : SimpleGraph α} [Nontrivial α]
+    (hconn : G.Connected) (hn3 : 3 ≤ Fintype.card α)
+    (hmono : ∀ z, DeleteConnected G z →
+      radOn G (Finset.univ.erase z) + 1 ≤ radOn G Finset.univ)
+    (hcut : ∃ a, IsCut G a) (w : {v // v ∈ nonleafSet G})
+    (hw : DeleteConnected (G.induce (nonleafSet G : Set α)) w) :
+    ∃ u, G.degree u = 1 ∧ G.Adj u w.val := by
+  by_contra hbad
+  have hno : ∀ u, G.degree u = 1 → ¬G.Adj u w.val := by
+    intro u hu huw
+    exact hbad ⟨u, hu, huw⟩
+  have attach : ∀ x, x ≠ w.val → ∃ a : {v // v ∈ nonleafSet G}, a ≠ w ∧
+      ∃ p : G.Walk x a.val, w.val ∉ p.support := by
+    intro x hxw
+    by_cases hx : x ∈ nonleafSet G
+    · refine ⟨⟨x, hx⟩, fun he => hxw (congrArg Subtype.val he),
+        SimpleGraph.Walk.nil, ?_⟩
+      simpa only [SimpleGraph.Walk.support_nil, List.mem_singleton] using hxw.symm
+    · have hleaf : G.degree x = 1 := by
+        by_contra hn
+        exact hx (mem_nonleafSet.mpr hn)
+      obtain ⟨a, hxa⟩ := (G.degree_pos_iff_exists_adj x).mp (by omega)
+      have ha := leaf_parent_mem_nonleafSet hconn hn3 hleaf hxa
+      have haw : a ≠ w.val := by
+        intro he
+        exact hno x hleaf (he ▸ hxa)
+      refine ⟨⟨a, ha⟩, fun he => haw (congrArg Subtype.val he), hxa.toWalk, ?_⟩
+      simp only [SimpleGraph.Adj.toWalk, SimpleGraph.Walk.support_cons,
+        SimpleGraph.Walk.support_nil, List.mem_cons, List.not_mem_nil, or_false]
+      exact not_or.mpr ⟨hxw.symm, haw.symm⟩
+  apply isCut_of_mem_nonleafSet hconn hmono hcut w.property
+  intro x y hx hy
+  obtain ⟨a, haw, p, hp⟩ := attach x hx
+  obtain ⟨b, hbw, r, hr⟩ := attach y hy
+  obtain ⟨q, hq⟩ := hw a b haw hbw
+  let f := (SimpleGraph.Embedding.induce (G := G) (nonleafSet G : Set α)).toHom
+  have hqmap : w.val ∉ (q.map f).support := by
+    intro hm
+    rw [SimpleGraph.Walk.support_map f q] at hm
+    obtain ⟨z, hz, hzw⟩ := List.mem_map.mp hm
+    exact hq ((Subtype.ext hzw : z = w) ▸ hz)
+  refine ⟨(p.append (q.map f)).append r.reverse, ?_⟩
+  intro hm
+  rw [SimpleGraph.Walk.mem_support_append_iff, SimpleGraph.Walk.mem_support_append_iff,
+    SimpleGraph.Walk.support_reverse, List.mem_reverse] at hm
+  exact hm.elim (fun h => h.elim hp hqmap) hr
+
 end Graffiti84
