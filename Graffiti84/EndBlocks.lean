@@ -770,7 +770,15 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
   have haS : a ∉ S := fun hs => haW ((hSiff a).mp hs).1
   obtain ⟨b, hbS⟩ : ∃ b, b ∉ S := ⟨a, haS⟩
   obtain ⟨w, hw⟩ := hconn.exists_walk_length_eq_dist v b
-  exact hbS (walk_end_mem_of_closed hclosed w hvS)
+  exact hbS (by
+    have hgo : ∀ (c : α), G.Walk v c → v ∈ S → c ∈ S := by
+      intro c p
+      induction p with
+      | nil => intro ha; exact ha
+      | @cons x y z' h t ih =>
+          intro ha
+          exact ih (hstep x ha y (SimpleGraph.Adj.symm h))
+    exact hgo b w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
 leaves. -/
