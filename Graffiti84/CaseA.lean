@@ -80,7 +80,12 @@ theorem vrd_cut_tree_bound {α : Type u} [Fintype α] [DecidableEq α] [Nontrivi
           have hb := treeNumber_add_two_leaves htree hv hw hvx hwy
             (Finset.mem_image.mpr ⟨x, hx, rfl⟩) (Finset.mem_image.mpr ⟨y, hy, rfl⟩)
             (leaf_out T v hv) (leaf_out T w hw) hvw
-          rw [Finset.card_image_of_injective T Subtype.val_injective, hTmax] at hb
+          have hcard : (T.image Subtype.val).card = T.card :=
+            Finset.card_image_of_injective T Subtype.val_injective
+          have hb' : T.card + 2 ≤ treeNumber F := by
+            calc
+              T.card + 2 = (T.image Subtype.val).card + 2 := congrArg (· + 2) hcard.symm
+              _ ≤ treeNumber F := hb
           omega
         · have hnc : ∀ w, DeleteConnected H w := by
             intro w
@@ -95,7 +100,12 @@ theorem vrd_cut_tree_bound {α : Type u} [Fintype α] [DecidableEq α] [Nontrivi
             obtain ⟨v, hv, hvw⟩ := core_noncut_has_leaf hF hn3 hdrop hcutF w (hnc w)
             exact ⟨v, hv, hvw, leaf_out T v hv⟩
           have hb := treeNumber_double_of_leaf_neighbors htree hcover
-          rw [Finset.card_image_of_injective T Subtype.val_injective, hTmax] at hb
+          have hcard : (T.image Subtype.val).card = T.card :=
+            Finset.card_image_of_injective T Subtype.val_injective
+          have hb' : 2 * T.card ≤ treeNumber F := by
+            calc
+              2 * T.card = 2 * (T.image Subtype.val).card := congrArg (2 * ·) hcard.symm
+              _ ≤ treeNumber F := hb
           have hgeod := radius_add_one_le_treeNumber hH
           omega
       · have hgeod := radius_add_one_le_treeNumber hF
