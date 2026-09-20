@@ -816,10 +816,9 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.Walk.length_dropLast p
   have hdrop : G.dist c p.penultimate ≤ p.dropLast.length :=
     SimpleGraph.dist_le (p.dropLast)
-  have hfin : G.dist c b + 1 ≤ p.length := by
-    have h := hdrop
-    rw [hpen] at h
-    omega
+  have hbeq : G.dist c b = G.dist c p.penultimate := by
+    rw [hpen]
+  have hfin : G.dist c b + 1 ≤ p.length := by omega
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -929,6 +928,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       rw [Finset.card_insert_of_notMem hne', Finset.card_singleton]
     have hsub := Finset.card_le_card (s := ({u, u'} : Finset α))
       (Finset.subset_univ _)
+    have huncard : Finset.univ.card = Fintype.card α := rfl
     omega
   obtain ⟨c_u, hcen, huepu⟩ := isUniqueEccentricPoint_of_radOn_erase
     hconn h2 (hmono u hncu)
