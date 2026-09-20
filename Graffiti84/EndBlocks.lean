@@ -736,14 +736,11 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         · have htb : t = b := List.mem_singleton.mp e
           rw [htb]
           exact hWmem b |>.mpr hbnc
-  have hvS : v ∈ S := by
-    rw [hSdef]
-    simp only [Finset.mem_filter, Finset.mem_univ]
-    refine ⟨hWmem v |>.mpr hv, ?_⟩
-    exact ⟨SimpleGraph.Walk.nil, by
+  have hvS : v ∈ S := (hSiff v).mpr
+    ⟨hWmem v |>.mpr hv, ⟨SimpleGraph.Walk.nil, by
       intro t ht
       rw [SimpleGraph.Walk.support_nil] at ht
-      exact ht rfl⟩
+      exact ht rfl⟩⟩
   have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
     hstep u hu z huz
   -- the cut vertex a is neither in W nor in S
