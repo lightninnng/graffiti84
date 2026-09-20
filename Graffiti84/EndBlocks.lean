@@ -903,37 +903,21 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         dist_le_one_of_adj (SimpleGraph.Adj.symm hub)
       omega
     omega
-  -- ecc(c_u) = d(c_u, u) = r ≥ 2
-  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
-    -- c_u is central: ecc(c_u) = radius
-    have hrad : G.eccent c_u = G.radius := hcen
-    have hene : G.eccent c_u ≠ ⊤ := by
-      obtain ⟨wtop, hwtop⟩ := G.exists_edist_eq_eccent_of_finite c_u
-      rw [← hwtop]
-      exact SimpleGraph.edist_ne_top_iff_reachable.mpr
-        (hconn.preconnected c_u wtop)
-    have hecoe : ((G.eccent c_u).toNat : ℕ∞) = G.eccent c_u :=
-      ENat.coe_toNat hene
-    omega
-  have hb'u : b ≠ u' := by
-    intro e
-    -- with b = u', the leaf u' is adjacent to u (hub with e) and to b=u'
-    have hu'u : G.Adj u' u := by
-      rw [← e]
-      exact SimpleGraph.Adj.symm hub
-    exact absurd (e ▸ hu'b) (by intro hc; exact SimpleGraph.Adj.ne hc rfl)
-  have hb'u2 : u' ≠ b := Ne.symm hb'u
+  -- A centre cannot be a leaf when the radius is at least two.
   have hcne : c_u ≠ u' := by
     intro e
-    -- c_u = u' would force d(u', b) = ecc - 1 ≥ 1 (via hdcb) while
-    -- d(u', b) ≤ 1 through the leaf edge; more precisely hdcb becomes
-    -- d(u', b) + 1 = ecc and hlt2 says ecc ≥ 2, so d(u', b) ≥ 1; but as a
-    -- leaf, u' has degree 1 with neighbour b, giving d(u', b) = 1 — no
-    -- contradiction yet. The true contradiction: hdu' (proved below) needs
-    -- c_u ≠ u'. Instead: c_u is a CENTRE; d(c_u, u') = ecc means u' is
-    -- eccentric of c_u; but d(c_u,u')=0 — so ecc=0, contradicting hlt2.
-    have hz : G.dist u' u' = 0 := dist_self' hconn u'
-    rw [e, hz] at hdcu
+    have hn3 : 3 ≤ Fintype.card α := by
+      have := four_le_card_of_radius_ge_two hconn hr2
+      omega
+    have hleaf := radius_lt_eccOn_of_isLeaf hconn hu' hu'b hn3
+    rw [eccOn_univ_eq_eccent, ← e, hcen] at hleaf
+    have hrtop : G.radius ≠ ⊤ := by
+      obtain ⟨c, y, hcy⟩ := G.exists_edist_eq_radius_of_finite
+      rw [← hcy]
+      exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hconn.preconnected c y)
+    have hnat := ENat.toNat_le_toNat hleaf hrtop
+    rw [ENat.toNat_add (by simp) hrtop] at hnat
+    simp only [ENat.toNat_one] at hnat
     omega
   have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
     dist_leaf_ge hconn hu' hu'b hcne

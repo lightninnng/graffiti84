@@ -2,7 +2,7 @@ name: Lean CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'codex/**']
   workflow_dispatch:
 
 jobs:
@@ -17,10 +17,17 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
       - name: Resolve dependencies
+        env:
+          MATHLIB_NO_CACHE_ON_UPDATE: '1'
         run: lake update
 
       - name: Fetch Mathlib cache
-        run: lake exe cache get
+        run: |
+          for attempt in 1 2 3; do
+            if lake exe cache get; then exit 0; fi
+            sleep 5
+          done
+          exit 1
 
       - name: Build all layers
         run: lake build
