@@ -779,7 +779,7 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
           intro ha
           -- ha : x ∈ S, h : G.Adj x y; hstep keeps the hop inside S and
           -- the induction continues from y along the tail t
-          exact ih (hstep x ha y h)
+          exact ih (hstep x ha y (SimpleGraph.Adj.symm h))
     exact hgo b w hvS)
 
 /-- **3.5b(i).** In a vrd graph with a cut vertex there are two distinct
