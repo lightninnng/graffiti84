@@ -905,21 +905,16 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     omega
   -- ecc(c_u) = d(c_u, u) = r ≥ 2
   have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
-    have hrne : G.radius ≠ ⊤ := by
-      obtain ⟨x, y, hxy⟩ :=
-        G.exists_edist_eq_radius_of_finite (α := α)
-      rw [← hxy]
-      exact SimpleGraph.edist_ne_top_iff_reachable.mpr
-        (hconn.preconnected x y)
+    -- c_u is central: ecc(c_u) = radius
+    have hrad : G.eccent c_u = G.radius := hcen
     have hene : G.eccent c_u ≠ ⊤ := by
       obtain ⟨wtop, hwtop⟩ := G.exists_edist_eq_eccent_of_finite c_u
       rw [← hwtop]
       exact SimpleGraph.edist_ne_top_iff_reachable.mpr
         (hconn.preconnected c_u wtop)
-    exact Nat.le_trans hr2
-      (ENat.toNat_le_toNat (G.radius_le_eccent (u := c_u)) hene)
-  -- u' also sits at distance ≥ (r-1)+1 from c_u: any c_u-u' walk ends
-  -- with the unique leaf edge b-u'
+    have hecoe : ((G.eccent c_u).toNat : ℕ∞) = G.eccent c_u :=
+      ENat.coe_toNat hene
+    omega
   have hb'u : b ≠ u' := by
     intro e
     -- with b = u', the leaf u' is adjacent to u (hub with e) and to b=u'
@@ -938,14 +933,13 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     -- c_u ≠ u'. Instead: c_u is a CENTRE; d(c_u, u') = ecc means u' is
     -- eccentric of c_u; but d(c_u,u')=0 — so ecc=0, contradicting hlt2.
     have hz : G.dist u' u' = 0 := dist_self' hconn u'
-    rw [e] at hdcu
     rw [e, hz] at hdcu
     omega
   have hdu' : G.dist c_u b + 1 ≤ G.dist c_u u' :=
     dist_leaf_ge hconn hu' hu'b hcne
   -- final counting: dist c_u b + 1 = ecc, yet dist c_u u' < ecc (UEP) —
   -- contradiction
-  have hlt := huepu.2 u' hne'
+  have hlt := huepu.2 u' (Ne.symm hne')
   omega
 
 end Graffiti84
