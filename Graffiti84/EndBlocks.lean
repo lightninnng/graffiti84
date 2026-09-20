@@ -1,3 +1,19 @@
+import Graffiti84.RootedChung
+
+/-!
+# EndBlocks
+
+Case B tools: `F10` (every finite connected graph on at least two vertices
+has two distinct non-cut vertices, via a longest path) and `F12` (radius
+`≥ 2` forces at least four vertices).
+-/
+
+namespace Graffiti84
+
+open Classical
+
+variable {α : Type*} [Fintype α] [DecidableEq α]
+
     -- two occurrences in the Nodup list w.support: contradiction
     rw [hsplit] at hwn
     rw [hsame] at hb1 hb2
