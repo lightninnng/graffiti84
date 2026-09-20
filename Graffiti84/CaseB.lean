@@ -110,7 +110,9 @@ theorem central_uep_of_uep_except {G : SimpleGraph α} [Nontrivial α]
       have hcy : D.Adj c y := by
         change G.dist c y = G.radius.toNat
         simpa only [hcentral c] using he
-      exact hya (adj_eq_of_degree_eq_one hc1 hac.symm hcy).symm
+      obtain ⟨w, _, hw⟩ :=
+        (SimpleGraph.degree_eq_one_iff_existsUnique_adj (G := D) (v := c)).mp hc1
+      exact hya ((hw y hcy).trans (hw a hac.symm).symm)
     omega
 
 /-- Case B's rooted tree, with its non-cut/radius-drop hypotheses explicit. -/
