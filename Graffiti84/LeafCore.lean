@@ -175,12 +175,14 @@ theorem core_noncut_has_leaf {G : SimpleGraph α} [Nontrivial α]
   obtain ⟨b, hbw, r, hr⟩ := attach y hy
   obtain ⟨q, hq⟩ := hw a b haw hbw
   let f := (SimpleGraph.Embedding.induce (G := G) (nonleafSet G : Set α)).toHom
-  have hqmap : w.val ∉ (q.map f).support := by
+  let qG : G.Walk a.val b.val := (q.map f).copy rfl rfl
+  have hqmap : w.val ∉ qG.support := by
     intro hm
-    rw [SimpleGraph.Walk.support_map f q] at hm
+    dsimp only [qG] at hm
+    rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_map f q] at hm
     obtain ⟨z, hz, hzw⟩ := List.mem_map.mp hm
     exact hq ((Subtype.ext hzw : z = w) ▸ hz)
-  refine ⟨(p.append (q.map f)).append r.reverse, ?_⟩
+  refine ⟨(p.append qG).append r.reverse, ?_⟩
   intro hm
   rw [SimpleGraph.Walk.mem_support_append_iff, SimpleGraph.Walk.mem_support_append_iff,
     SimpleGraph.Walk.support_reverse, List.mem_reverse] at hm

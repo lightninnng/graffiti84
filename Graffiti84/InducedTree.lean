@@ -16,9 +16,9 @@ theorem isInducedTree_image_induce {G : SimpleGraph α} {S : Finset α}
     obtain ⟨a', ha', rfl⟩ := Finset.mem_image.mp ha
     obtain ⟨b', hb', rfl⟩ := Finset.mem_image.mp hb
     obtain ⟨p, hp⟩ := hT.1 a' ha' b' hb'
-    refine ⟨p.map f, ?_⟩
+    refine ⟨(p.map f).copy rfl rfl, ?_⟩
     intro z hz
-    rw [SimpleGraph.Walk.support_map f p] at hz
+    rw [SimpleGraph.Walk.support_copy, SimpleGraph.Walk.support_map f p] at hz
     obtain ⟨w, hw, rfl⟩ := List.mem_map.mp hz
     exact Finset.mem_image.mpr ⟨w, hp w hw, rfl⟩
   · intro a p hp
