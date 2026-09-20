@@ -724,8 +724,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
                 rw [SimpleGraph.Walk.length_nil] at hw
                 omega
             | cons h t' =>
-                exact absurd
-                  (G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩) h0
+                have hpos : 0 < G.degree u :=
+                  G.degree_pos_iff_exists_adj u |>.mpr ⟨_, h⟩
+                omega
           omega
         · exact hge
       have h2 : 2 ≤ Fintype.card α := by
@@ -741,7 +742,8 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
         (deleteConnected_of_isUniqueEccentricPoint_neighbor hconn huepu
           hdeg2u hbu).2
       refine (hSiff b).mpr ⟨hWmem b |>.mpr hbnc, ?_⟩
-      refine ⟨hcu.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
+      obtain ⟨p, hp⟩ := hcu
+      refine ⟨p.append (SimpleGraph.Adj.toWalk (SimpleGraph.Adj.symm hbu)),
         ?_⟩
       intro t ht
       rw [SimpleGraph.Walk.support_append, List.mem_append] at ht
