@@ -157,4 +157,49 @@ theorem radOn_erase_eq_induce_radius_of_isLeaf {G : SimpleGraph α}
   rw [eccOn_erase_eq_induce_eccent_of_isLeaf hconn hu ⟨c, hc⟩]
   exact (G.induce (↑(Finset.univ.erase u) : Set α)).radius_le_eccent
 
+/-- The walk-based deletion predicate agrees with actual induced connectivity. -/
+theorem connected_induce_erase_iff {G : SimpleGraph α} [Nontrivial α] (v : α) :
+    (G.induce (↑(Finset.univ.erase v) : Set α)).Connected ↔ DeleteConnected G v := by
+  let S : Finset α := Finset.univ.erase v
+  let f := (SimpleGraph.Embedding.induce (G := G) (S : Set α)).toHom
+  constructor
+  · intro hconn x y hx hy
+    let xS : {z // z ∈ S} := ⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩
+    let yS : {z // z ∈ S} := ⟨y, Finset.mem_erase.mpr ⟨hy, Finset.mem_univ y⟩⟩
+    obtain ⟨p⟩ := hconn.preconnected xS yS
+    refine ⟨p.map f, ?_⟩
+    intro hmem
+    rw [SimpleGraph.Walk.support_map] at hmem
+    obtain ⟨z, _, hz⟩ := List.mem_map.mp hmem
+    exact (Finset.mem_erase.mp z.property).1 hz
+  · intro hdel
+    obtain ⟨x, hx⟩ := exists_ne v
+    haveI : Nonempty {z // z ∈ S} :=
+      ⟨⟨x, Finset.mem_erase.mpr ⟨hx, Finset.mem_univ x⟩⟩⟩
+    refine ⟨?_, inferInstance⟩
+    intro x y
+    obtain ⟨p, hp⟩ := hdel x.val y.val
+      (Finset.mem_erase.mp x.property).1 (Finset.mem_erase.mp y.property).1
+    refine ⟨p.induce (S : Set α) ?_⟩
+    intro z hz
+    exact Finset.mem_erase.mpr ⟨fun hzv => hp (hzv ▸ hz), Finset.mem_univ z⟩
+
+/-- The original graph's radius is at most the actual deleted radius plus one. -/
+theorem radius_le_induce_radius_add_one {G : SimpleGraph α} [Nontrivial α]
+    (hconn : G.Connected) (v : α) :
+    G.radius ≤ (G.induce (↑(Finset.univ.erase v) : Set α)).radius + 1 := by
+  obtain ⟨w, hvw⟩ := hconn.preconnected.exists_adj_of_nontrivial v
+  have h := radOn_le_radOn_erase_add_one (Finset.mem_univ v) hconn
+    ⟨w, Finset.mem_univ w, hvw.ne.symm, hvw⟩
+  rw [radOn_univ_eq_radius] at h
+  exact le_trans h (add_le_add (radOn_le_induce_radius G _) (le_refl 1))
+
+/-- Deleting a leaf does not increase the actual radius (at least three vertices). -/
+theorem induce_radius_le_of_isLeaf {G : SimpleGraph α} (hconn : G.Connected)
+    {u a : α} (hu : G.degree u = 1) (hua : G.Adj u a)
+    (hn3 : 3 ≤ Fintype.card α) :
+    (G.induce (↑(Finset.univ.erase u) : Set α)).radius ≤ G.radius := by
+  rw [← radOn_erase_eq_induce_radius_of_isLeaf hconn hu]
+  simpa only [radOn_univ_eq_radius] using radOn_erase_le_radOn_of_isLeaf hconn hu hua hn3
+
 end Graffiti84

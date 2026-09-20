@@ -30,7 +30,7 @@ theorem isInducedTree_image_induce {G : SimpleGraph α} {S : Finset α}
       exact hw ▸ w.property
     let q := p.induce (S : Set α) hmem
     have hmap : q.map f = p := SimpleGraph.Walk.map_induce p hmem
-    have hq : q.IsCycle := SimpleGraph.Walk.IsCycle.of_map (by
+    have hq : q.IsCycle := SimpleGraph.Walk.IsCycle.of_map (f := f) (by
       rw [hmap]
       exact hcycle)
     have hinside : ∀ z ∈ q.support, z ∈ T := by
