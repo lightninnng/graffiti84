@@ -860,8 +860,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         SimpleGraph.Walk.support_copy] at hmem
       rcases hmem with h1 | h2
       · -- u ∈ dropLast.support of q, i.e. at a non-final slot of q.support
-        have hqne' := hqne
-        rw [SimpleGraph.Walk.support_dropLast q hqne'] at h1
+        rw [SimpleGraph.Walk.support_dropLast hqne] at h1
         have hzu : u ∈ q.support.dropLast := h1
         -- u is q's terminal vertex; the geodesic path property forbids it
         have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
@@ -872,7 +871,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
             exact List.sublist_append_left _ _
           exact List.Nodup.sublist hsub' hwn
         have huin : u ∈ q.support := by
-          rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
+          rw [SimpleGraph.Walk.support_dropLast hqne] at h1
           exact List.mem_of_mem_dropLast h1
         have hidx1 : q.support.idxOf u = q.support.length - 1 := by
           have hmemL : u ∈ q.support := huin
@@ -893,10 +892,18 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       · -- u ∈ rt.support would put u twice in r's support (head + here),
         -- contradicting the geodesic's nodup
         have hrnd : r.support.Nodup := by
-          have hsub' : r.support <+: w.support := by
+          have hwn : w.support.Nodup := hpath.support_nodup
+          have hsub' : r.support ⊆ w.support := by
             rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
-            exact List.sublist_append_right _ _
-          exact List.Nodup.sublist hsub' hwn
+            exact fun z hz => Or.inr hz
+          have hsub2 : r.support <+: w.support := by
+            cases r with
+            | nil => simp
+            | cons h' t' =>
+                rw [hqr]
+                rw [SimpleGraph.Walk.support_append]
+                exact List.sublist_append_right _ _
+          exact List.Nodup.sublist hsub2 hwn
         have hrs : r.support = u :: rt.support := by
           rw [hrcons]
           simp [SimpleGraph.Walk.support_cons]
