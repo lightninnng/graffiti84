@@ -8,9 +8,9 @@ Final arithmetic assembly for Graffiti.pc Conjecture 84.
 
 This file contains no `sorry` and no `axiom`.
 
-The graph-facing theorem is introduced only after the Leaf Lemma and the
-Erdos--Saks--Sos / Chung bound have been kernel-formalized in the preceding
-layers.  The pure arithmetic closure below is complete.
+The unconditional graph-facing theorem awaits the Leaf Lemma. The
+minimum-degree-at-least-two branch below already uses the elementary
+geodesic bound, with no Erdos--Saks--Sos hypothesis.
 -/
 
 namespace Graffiti84
@@ -48,7 +48,7 @@ theorem final_arithmetic
 /-!
 ## Final graph theorem target
 
-After `leafLemma` and the Chung theorem are imported:
+After `leafLemma` is implemented:
 
 ```
 theorem graphConjecture84
@@ -56,12 +56,11 @@ theorem graphConjecture84
     (G : SimpleGraph α) [DecidableRel G.Adj]
     (hG : G.Connected) :
     2 * G.radius.toNat ≤
-      G.largestInducedTreeSize * minDegree G := by
+      treeNumber G * minDegree G := by
   ...
 ```
 
-The exact `minDegree` definition should be fixed only after checking the
-Mathlib/FormalConjectures API used in the user's local environment.
+The project uses the `minDegree` definition below.
 -/
 
 

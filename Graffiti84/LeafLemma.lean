@@ -12,13 +12,12 @@ This layer is reserved for the strong leaf lemma
 
 There are no `sorry`/`axiom` declarations in this snapshot.
 
-The final theorem is intentionally not declared until both of its classical
-ingredients are kernel-formalized:
-1. the radius-drop / UEP criterion,
-2. the theorem-specific vrd cut-vertex structure closure.
+The final theorem is intentionally not declared until the vrd cut-vertex
+structure closure and the minimal-counterexample induction are formalized.
+The radius-drop / UEP criterion and the rooted Chung lemma are implemented.
 
-This file already contains the fully formal arithmetic inequality required
-for the corona-count branch and the final leaf-extension counting helper.
+This file contains the arithmetic inequality required for the corona-count
+branch, the induced-tree leaf extension, and its graph-level size bound.
 -/
 
 namespace Graffiti84
@@ -126,9 +125,8 @@ theorem treeNumber_ge_of_rooted_tree_and_leaf {α : Type*} [Fintype α]
 /-!
 ## Final theorem target
 
-Once `RadiusCriticalStructure.lean` has the two missing structural lemmas and
-the rooted Chung lemma has been ported from the already-formalized WOWII #31
-proof, declare and prove:
+Once the Case A structure theorem and the minimal-counterexample induction
+are implemented, declare and prove (using the actual `treeNumber` definition):
 
 ```
 theorem leafLemma
@@ -136,7 +134,7 @@ theorem leafLemma
     (G : SimpleGraph α) [DecidableRel G.Adj]
     (hG : G.Connected)
     (hleaf : ∃ u : α, G.degree u = 1) :
-    2 * G.radius.toNat ≤ G.largestInducedTreeSize := by
+    2 * G.radius.toNat ≤ treeNumber G := by
   ...
 ```
 
