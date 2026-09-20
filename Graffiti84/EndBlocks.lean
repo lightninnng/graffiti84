@@ -740,8 +740,9 @@ theorem degree_eq_one_of_nonCut_of_hasCut {G : SimpleGraph α}
     ⟨hWmem v |>.mpr hv, ⟨SimpleGraph.Walk.nil, by
       intro t ht
       rcases List.mem_cons.mp ht with e | e
-      · exact e
-      · exact e⟩⟩
+      · rw [e]
+        exact hWmem v |>.mpr hv
+      · exact absurd e (by simp)⟩⟩
   have hclosed : ∀ u ∈ S, ∀ z, G.Adj u z → z ∈ S := fun u hu z huz =>
     hstep u hu z (SimpleGraph.Adj.symm huz)
   -- the cut vertex a is neither in W nor in S
