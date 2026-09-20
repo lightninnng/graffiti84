@@ -897,6 +897,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   -- d(c_u, b) = r - 1 and d(c_u, u) = r
   have hdcu : G.dist c_u u = (G.eccent c_u).toNat := huepu.1
   have hdcb : G.dist c_u b + 1 = (G.eccent c_u).toNat := by
+    have hlt := huepu.2 b (G.ne_of_adj hub).symm
     have h1 : G.dist c_u u ≤ G.dist c_u b + 1 := by
       have htr := hconn.dist_triangle (u := c_u) (v := b) (w := u)
       have hb1 : G.dist b u ≤ 1 :=
@@ -906,6 +907,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   -- A centre cannot be a leaf when the radius is at least two.
   have hcne : c_u ≠ u' := by
     intro e
+    haveI : Nonempty α := ⟨b⟩
     have hn3 : 3 ≤ Fintype.card α := by
       have := four_le_card_of_radius_ge_two hconn hr2
       omega

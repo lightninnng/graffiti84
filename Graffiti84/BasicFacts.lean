@@ -8,12 +8,14 @@ Foundational layer for the Graffiti84 proof (Phase 1 of `docs/full-proof.md`).
 We use a *set-relative deletion framework*: instead of forming the subgraph
 `G - v` (whose Mathlib version changes the vertex type), we keep the ambient
 graph `G` and restrict quantification to a vertex set `S`.  Distances are
-ambient `G`-distances; this is faithful to the paper because every radius
-claim about `G - v` is used via distance bounds among the surviving vertices.
+ambient `G`-distances. This is only distance bookkeeping: in general deleting
+a vertex can increase distances, so `radOn` is not the induced-subgraph radius.
+Arguments about the radius of `G - v` require an explicit comparison or a
+proof that the relevant shortest walks avoid the deleted vertex.
 
 * `eccOn G S c` : eccentricity of `c` restricted to `S`;
 * `radOn G S`   : radius restricted to `S` (`S = univ` gives `r(G)`,
-  `S = univ.erase v` gives `r(G - v)`);
+  `S = univ.erase v` restricts the original metric to surviving vertices);
 * `DeleteConnected G v` : every two vertices other than `v` are joined by a
   walk avoiding `v` (paper: "`G - v` is connected");
 * `IsCut G v` : `v` is a cut vertex.
