@@ -866,10 +866,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
         have hwn : w.support.Nodup := hpath.support_nodup
         have hqnd : q.support.Nodup := by
-          have hsub' : q.support <+: w.support := by
-            rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
-            exact List.sublist_append_left _ _
-          exact List.Nodup.sublist hsub' hwn
+          rw [hqr]
+          exact hwn.of_append_left
         have huin : u ∈ q.support := by
           rw [SimpleGraph.Walk.support_dropLast hqne] at h1
           exact List.mem_of_mem_dropLast h1
@@ -892,18 +890,8 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       · -- u ∈ rt.support would put u twice in r's support (head + here),
         -- contradicting the geodesic's nodup
         have hrnd : r.support.Nodup := by
-          have hwn : w.support.Nodup := hpath.support_nodup
-          have hsub' : r.support ⊆ w.support := by
-            rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
-            exact fun z hz => Or.inr hz
-          have hsub2 : r.support <+: w.support := by
-            cases r with
-            | nil => simp
-            | cons h' t' =>
-                rw [hqr]
-                rw [SimpleGraph.Walk.support_append]
-                exact List.sublist_append_right _ _
-          exact List.Nodup.sublist hsub2 hwn
+          rw [hqr]
+          exact hwn.of_append_right
         have hrs : r.support = u :: rt.support := by
           rw [hrcons]
           simp [SimpleGraph.Walk.support_cons]
@@ -927,7 +915,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       rcases hz with h1 | h2
       · -- z ∈ q.dropLast.support ⊆ q.support, and z ≠ u
         have hsub : z ∈ q.support := by
-          rw [SimpleGraph.Walk.support_dropLast q hqne] at h1
+          rw [SimpleGraph.Walk.support_dropLast hqne] at h1
           exact List.mem_of_mem_dropLast h1
         have hzw : z ∈ w.support := by
           rw [hqr, SimpleGraph.Walk.mem_support_append_iff]
@@ -945,7 +933,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
           exact List.Nodup.sublist hsub' hwn
         -- q's support ends with u (q is a walk ending at u)
         have huin : u ∈ q.support := by
-          have hdl2 := SimpleGraph.Walk.support_dropLast q hqne
+          have hdl2 := SimpleGraph.Walk.support_dropLast hqne
           rw [hdl2] at h1
           exact List.mem_of_mem_dropLast h1
         -- last element of q.support is u
@@ -970,7 +958,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
           have := (hnd.getElem_inj_iff).mp (hj.symm.trans hv)
           rw [this] at *
           omega
-        have hdl2 := SimpleGraph.Walk.support_dropLast q hqne
+        have hdl2 := SimpleGraph.Walk.support_dropLast hqne
         rw [hdl2, List.mem_dropLast_iff_idxOf_lt huin] at h1
         omega
       · -- z ∈ rt.support: u is only r's head, not in rt.support
