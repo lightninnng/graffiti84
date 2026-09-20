@@ -818,17 +818,9 @@ private theorem dist_leaf_ge {G : SimpleGraph α} (hconn : G.Connected)
     SimpleGraph.dist_le (p.dropLast)
   have hbeq : G.dist c b = G.dist c p.penultimate := by rw [hpen]
   have h := SimpleGraph.dist_le (p.dropLast)
-  rw [show p.dropLast.length = p.length - 1 from hlen] at h
-  have hcu : c = u → False := fun hc => hpne (by rw [hc])
-  have h2 : G.dist c u = p.length := hsu
-  have h3 : p.length - 1 + 1 = p.length := by
-    have hp1 : 0 < p.length := by
-      cases p with
-      | nil => exact absurd hcu hpne
-      | cons h' t' =>
-          rw [SimpleGraph.Walk.length_cons]
-          omega
-    omega
+  rw [hlen] at h
+  have h3 : p.length - 1 + 1 = p.length :=
+    Nat.sub_one_add_one (SimpleGraph.Walk.not_nil_iff_lt_length.mp hpne)
   omega
 
 /-- **3.6b.** In a vrd graph with `r ≥ 2`, no vertex is adjacent to two
@@ -875,8 +867,9 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
         have hpath : w.IsPath := isPath_of_length_eq_dist hconn hw
         have hwn : w.support.Nodup := hpath.support_nodup
         have hsplit : w.support = q.support ++ rt.support := by
-          rw [hqr, hrcons]
-          simp [SimpleGraph.Walk.support_cons]
+          rw [hqr, hrcons, SimpleGraph.Walk.support_append,
+            SimpleGraph.Walk.support_cons]
+          simp
         have hqnd : q.support.Nodup := by
           rw [hsplit]
           exact hwn.of_append_left
