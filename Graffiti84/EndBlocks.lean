@@ -907,7 +907,7 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
     have hrne : G.radius ≠ ⊤ := by
       obtain ⟨x, y, hxy⟩ :=
-        G.exists_edist_eq_radius_of_finite (α := α) ⟨c_u⟩
+        G.exists_edist_eq_radius_of_finite (α := α)
       rw [← hxy]
       exact SimpleGraph.edist_ne_top_iff_reachable.mpr
         (hconn.preconnected x y)
@@ -922,11 +922,14 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
   -- with the unique leaf edge b-u'
   have hb'u : b ≠ u' := by
     intro e
-    rw [e] at hub
-    have hu'u : G.Adj u' u := SimpleGraph.Adj.symm hub
-    have hu'b' : G.Adj u' b := hu'b
-    rw [← e] at hu'b'
-    exact hne' (adj_eq_of_degree_eq_one hu' hu'u hu'b').symm
+    -- with b = u', the leaf u' is adjacent to u (hub with e) and to b=u'
+    have hu'u : G.Adj u' u := by
+      rw [← e]
+      exact hub
+    have hu'bb : G.Adj u' u' := by
+      rw [← e]
+      exact hu'b
+    exact hne' (adj_eq_of_degree_eq_one hu' hu'u hu'bb)
   have hb'u2 : u' ≠ b := Ne.symm hb'u
   have hcne : c_u ≠ u' := by
     intro e
