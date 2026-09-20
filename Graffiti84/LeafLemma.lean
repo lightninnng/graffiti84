@@ -1,5 +1,7 @@
 import Graffiti84.RadiusCriticalStructure
 import Graffiti84.CaseB
+import Graffiti84.Deletion
+import Graffiti84.InducedTree
 import Mathlib
 
 /-!
@@ -121,6 +123,44 @@ theorem treeNumber_ge_of_rooted_tree_and_leaf {α : Type*} [Fintype α]
     Finset.le_sup (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩)
   rw [Finset.card_insert_of_notMem huS] at hbound
   omega
+
+/-- Case B assembled in the original graph. The hypotheses on the deleted
+graph are explicit; the minimal-counterexample argument still has to supply them. -/
+theorem leaf_bound_of_caseB {α : Type*} [Fintype α] [DecidableEq α]
+    {G : SimpleGraph α} (hconn : G.Connected) {u a : α}
+    (hu : G.degree u = 1) (hua : G.Adj u a) (hr2 : 2 ≤ G.radius.toNat)
+    (hrad : (G.induce (↑(Finset.univ.erase u) : Set α)).radius = G.radius)
+    (hdeg : ∀ v : {v // v ∈ Finset.univ.erase u},
+      2 ≤ (G.induce (↑(Finset.univ.erase u) : Set α)).degree v)
+    (hdrop : ∀ v : {v // v ∈ Finset.univ.erase u}, v.val ≠ a →
+      DeleteConnected (G.induce (↑(Finset.univ.erase u) : Set α)) v →
+      radOn (G.induce (↑(Finset.univ.erase u) : Set α)) (Finset.univ.erase v) + 1 ≤
+        (G.induce (↑(Finset.univ.erase u) : Set α)).radius) :
+    2 * G.radius.toNat ≤ treeNumber G := by
+  let H := G.induce (↑(Finset.univ.erase u) : Set α)
+  let aH : {v // v ∈ Finset.univ.erase u} :=
+    ⟨a, Finset.mem_erase.mpr ⟨hua.ne.symm, Finset.mem_univ a⟩⟩
+  haveI : Nontrivial α := ⟨u, a, hua.ne⟩
+  have hH : H.Connected := (connected_induce_erase_iff u).mpr
+    (deleteConnected_of_isLeaf hconn hu)
+  haveI : Nontrivial {v // v ∈ Finset.univ.erase u} :=
+    SimpleGraph.nontrivial_of_degree_ne_zero (G := H) (v := aH)
+      (by have := hdeg aH; omega)
+  obtain ⟨T, hT, haT, hcard⟩ := rooted_tree_of_drop_except hH aH
+    (by simpa only [H, hrad] using hr2) hdeg (by
+      intro v hva hv
+      apply hdrop v _ hv
+      intro he
+      exact hva (Subtype.ext he))
+  have htree : IsInducedTree G (T.image Subtype.val) := isInducedTree_image_induce hT
+  have haS : a ∈ T.image Subtype.val := Finset.mem_image.mpr ⟨aH, haT, rfl⟩
+  have huS : u ∉ T.image Subtype.val := by
+    intro hm
+    obtain ⟨v, _, hv⟩ := Finset.mem_image.mp hm
+    exact (Finset.mem_erase.mp v.property).1 hv
+  apply treeNumber_ge_of_rooted_tree_and_leaf htree haS huS hu hua
+  rw [Finset.card_image_of_injective T Subtype.val_injective]
+  simpa only [H, hrad] using hcard
 
 /-!
 ## Final theorem target
