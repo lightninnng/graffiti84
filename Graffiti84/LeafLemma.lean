@@ -2,6 +2,8 @@ import Graffiti84.RadiusCriticalStructure
 import Graffiti84.CaseB
 import Graffiti84.Deletion
 import Graffiti84.InducedTree
+import Graffiti84.CaseA
+import Graffiti84.LeafDeletion
 import Mathlib
 
 /-!
@@ -23,6 +25,8 @@ branch, the induced-tree leaf extension, and its graph-level size bound.
 -/
 
 namespace Graffiti84
+
+universe u
 
 open Classical
 open SimpleGraph
@@ -166,23 +170,112 @@ theorem leaf_bound_of_caseB {α : Type*} [Fintype α] [DecidableEq α]
   rw [Finset.card_image_of_injective T Subtype.val_injective]
   simpa only [H, hrad] using hcard
 
-/-!
-## Final theorem target
 
-Once the Case A structure theorem and the minimal-counterexample induction
-are implemented, declare and prove (using the actual `treeNumber` definition):
+lemma finite_radius_of_connected {β : Type*} [Fintype β] [Nonempty β]
+    {F : SimpleGraph β} (hF : F.Connected) : F.radius ≠ ⊤ := by
+  obtain ⟨x, y, hxy⟩ := F.exists_edist_eq_radius_of_finite
+  rw [← hxy]
+  exact SimpleGraph.edist_ne_top_iff_reachable.mpr (hF.preconnected x y)
 
-```
-theorem leafLemma
-    {α : Type*} [Fintype α] [DecidableEq α] [Nontrivial α]
-    (G : SimpleGraph α) [DecidableRel G.Adj]
-    (hG : G.Connected)
-    (hleaf : ∃ u : α, G.degree u = 1) :
+lemma enat_add_one_le_of_toNat_lt {a b : ℕ∞} (ha : a ≠ ⊤) (hb : b ≠ ⊤)
+    (h : a.toNat < b.toNat) : a + 1 ≤ b := by
+  have hh : (a.toNat : ℕ∞) + 1 ≤ (b.toNat : ℕ∞) := by
+    exact_mod_cast (show a.toNat + 1 ≤ b.toNat by omega)
+  simpa only [ENat.coe_toNat ha, ENat.coe_toNat hb] using hh
+
+/-- Every finite connected graph with a leaf has an induced tree of order at least twice its radius. -/
+set_option backward.isDefEq.respectTransparency false in
+ theorem leafLemma {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
+    (G : SimpleGraph α) (hG : G.Connected) (hleaf : ∃ u, G.degree u = 1) :
     2 * G.radius.toNat ≤ treeNumber G := by
-  ...
-```
-
-No placeholder theorem is introduced before that proof is available.
--/
+  classical
+  have main : ∀ n, ∀ (β : Type u) [Fintype β] [DecidableEq β] [Nontrivial β]
+      (F : SimpleGraph β), Fintype.card β = n → F.Connected →
+      (∃ u, F.degree u = 1) → 2 * F.radius.toNat ≤ treeNumber F := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | h n ih =>
+      intro β _ _ _ F hn hF hleafF
+      by_cases hr2 : 2 ≤ F.radius.toNat
+      · by_contra hbad
+        have hbad' : treeNumber F < 2 * F.radius.toNat := Nat.lt_of_not_ge hbad
+        obtain ⟨u, hu⟩ := hleafF
+        obtain ⟨a, hua⟩ := (F.degree_pos_iff_exists_adj u).mp (by omega)
+        have hn3 : 3 ≤ Fintype.card β := by
+          have := four_le_card_of_radius_ge_two hF hr2
+          omega
+        have hcut : IsCut F a := isCut_of_isLeaf hu hua hua.ne hn3
+        have hFtop := finite_radius_of_connected hF
+        have small : ∀ v : β, Fintype.card {x // x ∈ Finset.univ.erase v} < n := by
+          intro v
+          have hh := Finset.card_lt_card (Finset.erase_ssubset (Finset.mem_univ v))
+          simpa only [Fintype.card_coe, Finset.card_univ, hn] using hh
+        have drop : ∀ v, v ≠ u → DeleteConnected F v →
+            radOn F (Finset.univ.erase v) + 1 ≤ radOn F Finset.univ := by
+          intro v hvu hv
+          have hva : v ≠ a := fun he => hcut (he ▸ hv)
+          let D := F.induce (↑(Finset.univ.erase v) : Set β)
+          let uD : {x // x ∈ Finset.univ.erase v} :=
+            ⟨u, Finset.mem_erase.mpr ⟨hvu.symm, Finset.mem_univ u⟩⟩
+          have huD : D.degree uD = 1 := degree_one_induce_of_isLeaf hu hua
+            uD.property (Finset.mem_erase.mpr ⟨hva.symm, Finset.mem_univ a⟩)
+          haveI : Nontrivial {x // x ∈ Finset.univ.erase v} :=
+            SimpleGraph.nontrivial_of_degree_ne_zero (G := D) (v := uD) (by rw [huD]; omega)
+          have hD : D.Connected := (connected_induce_erase_iff v).mpr hv
+          have hIH := ih _ (small v) _ D rfl hD ⟨uD, huD⟩
+          have ht := treeNumber_induce_le F (Finset.univ.erase v)
+          have hrlt : D.radius.toNat < F.radius.toNat := by omega
+          have hd := enat_add_one_le_of_toNat_lt (finite_radius_of_connected hD) hFtop hrlt
+          rw [radOn_univ_eq_radius]
+          exact le_trans (add_le_add (radOn_le_induce_radius F _) (le_refl 1)) hd
+        let H := F.induce (↑(Finset.univ.erase u) : Set β)
+        have hH : H.Connected := (connected_induce_erase_iff u).mpr
+          (deleteConnected_of_isLeaf hF hu)
+        haveI : Nonempty {x // x ∈ Finset.univ.erase u} := hH.nonempty
+        have hHtop := finite_radius_of_connected hH
+        have hradle : H.radius ≤ F.radius := induce_radius_le_of_isLeaf hF hu hua hn3
+        by_cases hrlt : H.radius.toNat < F.radius.toNat
+        · have hd := enat_add_one_le_of_toNat_lt hHtop hFtop hrlt
+          have hmono : ∀ v, DeleteConnected F v →
+              radOn F (Finset.univ.erase v) + 1 ≤ radOn F Finset.univ := by
+            intro v hv
+            by_cases he : v = u
+            · subst v
+              rw [radOn_univ_eq_radius]
+              exact le_trans (add_le_add (radOn_le_induce_radius F _) (le_refl 1)) hd
+            · exact drop v he hv
+          exact hbad (vrd_cut_tree_bound hF hmono ⟨a, hcut⟩)
+        · have hradNat : H.radius.toNat = F.radius.toNat := by
+            have hh := ENat.toNat_le_toNat hradle hFtop
+            omega
+          have hrad : H.radius = F.radius := by
+            rw [← ENat.coe_toNat hHtop, ← ENat.coe_toNat hFtop, hradNat]
+          obtain ⟨x, y, hxy⟩ := H.exists_edist_eq_radius_of_finite
+          have hdxy : H.dist x y = H.radius.toNat := congrArg ENat.toNat hxy
+          haveI : Nontrivial {x // x ∈ Finset.univ.erase u} := ⟨x, y, by
+            intro he
+            rw [he, SimpleGraph.dist_self] at hdxy
+            omega⟩
+          have hdeg : ∀ v, 2 ≤ H.degree v := by
+            intro v
+            have hp := hH.preconnected.degree_pos_of_nontrivial v
+            by_contra hh
+            have hv : H.degree v = 1 := by omega
+            have hIH := ih _ (small u) _ H rfl hH ⟨v, hv⟩
+            have ht := treeNumber_induce_le F (Finset.univ.erase u)
+            omega
+          have hdropH : ∀ v : {x // x ∈ Finset.univ.erase u}, v.val ≠ a →
+              DeleteConnected H v → radOn H (Finset.univ.erase v) + 1 ≤ H.radius := by
+            intro v hva hv
+            have hvF := deleteConnected_lift_leaf hua v hva hv
+            have hd := drop v.val (Finset.mem_erase.mp v.property).1 hvF
+            obtain ⟨c, hc, hcv⟩ := isUniqueEccentricPoint_of_radOn_erase hF (by omega) hd
+            obtain ⟨d, hd, hdv⟩ := central_uep_after_leaf_deletion hF hn3 hu hrad v hc hcv
+            simpa only [radOn_univ_eq_radius] using
+              radOn_erase_add_one_le_of_isUniqueEccentricPoint hH inferInstance hd hdv
+          exact hbad (leaf_bound_of_caseB hF hu hua hr2 hrad hdeg hdropH)
+      · have hh := radius_add_one_le_treeNumber hF
+        omega
+  exact main (Fintype.card α) α G rfl hG hleaf
 
 end Graffiti84

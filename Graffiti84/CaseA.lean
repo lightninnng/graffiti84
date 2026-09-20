@@ -9,6 +9,7 @@ universe u
 
 /-- Case A's induced-tree bound, proved directly by peeling leaves.
 No corona classification or block decomposition is assumed. -/
+set_option backward.isDefEq.respectTransparency false in
 theorem vrd_cut_tree_bound {α : Type u} [Fintype α] [DecidableEq α] [Nontrivial α]
     {G : SimpleGraph α} (hconn : G.Connected)
     (hmono : ∀ z, DeleteConnected G z →
