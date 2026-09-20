@@ -884,7 +884,6 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
     rw [hsplit] at hwn
     rw [hsame] at hb1 hb2
     exact List.nodup_append'.mp hwn |>.2.2 hb1 hb2
-    · exact ⟨w, hum⟩
   have h2 : 2 ≤ Fintype.card α := by
     have hne' : u ∉ ({u'} : Finset α) := by simp [hne]
     have h1 : ({u, u'} : Finset α).card = 2 := by
@@ -905,13 +904,40 @@ theorem unique_leaf_neighbor {G : SimpleGraph α} (hconn : G.Connected)
       omega
     omega
   -- ecc(c_u) = d(c_u, u) = r ≥ 2
-  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by omega
+  have hlt2 : 2 ≤ (G.eccent c_u).toNat := by
+    have hrne : G.radius ≠ ⊤ := by
+      obtain ⟨x, y, hxy⟩ := G.exists_edist_eq_radius_of_finite (α := α)
+      rw [← hxy]
+      exact SimpleGraph.edist_ne_top_iff_reachable.mpr
+        (hconn.preconnected x y)
+    have hcoe : ((G.radius.toNat : ℕ) : ℕ∞) = G.radius := ENat.coe_toNat hrne
+    have hrle : G.radius ≤ G.eccent c_u :=
+      G.radius_le_eccent (u := c_u)
+    have hene : G.eccent c_u ≠ ⊤ := by
+      have hcc : ((G.dist c_u u : ℕ) : ℕ∞) = G.edist c_u u :=
+        (hconn.preconnected c_u u).coe_dist_eq_edist
+      have htop : G.edist c_u u ≠ ⊤ :=
+        SimpleGraph.edist_ne_top_iff_reachable.mpr
+          (hconn.preconnected c_u u)
+      intro ht
+      have hed : G.edist c_u u = G.eccent c_u := by
+        rw [← hcc, hdcu]
+        exact ENat.coe_toNat ht
+      rw [ht] at hed
+      rw [hed] at htop
+      exact htop rfl
+    have hecoe : ((G.eccent c_u).toNat : ℕ∞) = G.eccent c_u :=
+      ENat.coe_toNat hene
+    omega
   -- u' also sits at distance ≥ (r-1)+1 from c_u: any c_u-u' walk ends
   -- with the unique leaf edge b-u'
   have hb'u : b ≠ u' := by
     intro e
     rw [e] at hub
-    exact hne' (adj_eq_of_degree_eq_one hu' hub (SimpleGraph.Adj.symm hu'b))
+    have hu'u : G.Adj u' u := SimpleGraph.Adj.symm hub
+    have hu'b' : G.Adj u' b := hu'b
+    rw [← e] at hu'b'
+    exact hne' (adj_eq_of_degree_eq_one hu' hu'u hu'b').symm
   have hb'u2 : u' ≠ b := Ne.symm hb'u
   have hcne : c_u ≠ u' := by
     intro e
